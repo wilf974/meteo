@@ -37,7 +37,7 @@ services:
     container_name: meteo-backend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3002:3000"
     environment:
       NODE_ENV: production
       DATABASE_HOST: postgres
