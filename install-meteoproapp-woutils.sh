@@ -36,11 +36,11 @@ else
     cd $INSTALL_DIR
 fi
 
-# 4. Générer les mots de passe sécurisés
+# 4. Générer les mots de passe sécurisés (sans caractères spéciaux problématiques)
 echo "🔐 Génération des mots de passe..."
-DB_PASS=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
-REDIS_PASS=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
-JWT_SECRET=$(openssl rand -base64 64 | tr -d "=+/" | cut -c1-50)
+DB_PASS=$(openssl rand -hex 16)
+REDIS_PASS=$(openssl rand -hex 16)
+JWT_SECRET=$(openssl rand -hex 32)
 
 echo "✅ Mots de passe générés (sauvegardés dans $INSTALL_DIR/.passwords)"
 cat > .passwords << EOF
@@ -54,16 +54,17 @@ chmod 600 .passwords
 echo "⚙️  Configuration de l'environnement..."
 cp .env.production .env
 
-sed -i "s/meteoproapp.votredomaine.com/$DOMAIN/g" .env
-sed -i "s/admin@votredomaine.com/$EMAIL/g" .env
-sed -i "s/CHANGEZ_MOI_MOT_DE_PASSE_FORT_ALEATOIRE/$DB_PASS/g" .env
-sed -i "s/CHANGEZ_MOI_REDIS_PASSWORD_FORT/$REDIS_PASS/g" .env
-sed -i "s/CHANGEZ_MOI_CLE_JWT_SECRETE_TRES_LONGUE_ET_ALEATOIRE/$JWT_SECRET/g" .env
-sed -i "s/votre_vraie_cle_openweather/$OPENWEATHER_KEY/g" .env
+# Utiliser | comme délimiteur pour éviter les problèmes avec les caractères spéciaux
+sed -i "s|meteoproapp.votredomaine.com|$DOMAIN|g" .env
+sed -i "s|admin@votredomaine.com|$EMAIL|g" .env
+sed -i "s|CHANGEZ_MOI_MOT_DE_PASSE_FORT_ALEATOIRE|$DB_PASS|g" .env
+sed -i "s|CHANGEZ_MOI_REDIS_PASSWORD_FORT|$REDIS_PASS|g" .env
+sed -i "s|CHANGEZ_MOI_CLE_JWT_SECRETE_TRES_LONGUE_ET_ALEATOIRE|$JWT_SECRET|g" .env
+sed -i "s|votre_vraie_cle_openweather|$OPENWEATHER_KEY|g" .env
 
 # 6. Mettre à jour nginx.conf
 echo "🔧 Configuration de Nginx..."
-sed -i "s/meteoproapp.votredomaine.com/$DOMAIN/g" nginx/nginx.conf
+sed -i "s|meteoproapp.votredomaine.com|$DOMAIN|g" nginx/nginx.conf
 
 # 7. Créer les répertoires
 echo "📁 Création des répertoires..."
