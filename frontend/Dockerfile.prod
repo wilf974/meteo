@@ -1,0 +1,51 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Arguments de build
+ARG VITE_API_URL
+ARG VITE_WS_URL
+
+# Variables d'environnement pour le build
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_WS_URL=$VITE_WS_URL
+
+# Copier les fichiers de dépendances
+COPY package*.json ./
+COPY tsconfig.json ./
+COPY tsconfig.node.json ./
+COPY vite.config.ts ./
+COPY postcss.config.js ./
+COPY tailwind.config.js ./
+
+# Installer les dépendances
+RUN npm ci
+
+# Copier le code source
+COPY src ./src
+COPY index.html ./
+COPY public ./public
+
+# Build de production
+RUN npm run build
+
+# Production stage avec Nginx
+FROM nginx:alpine
+
+# Copier la configuration Nginx personnalisée
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copier les fichiers buildés
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Créer un utilisateur non-root
+RUN addgroup -g 1001 -S nginx && \
+    adduser -S nginx -u 1001 && \
+    chown -R nginx:nginx /usr/share/nginx/html
+
+EXPOSE 5173
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:5173/ || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]
