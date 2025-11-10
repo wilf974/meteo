@@ -24,7 +24,7 @@ RUN npm install
 # Copier le code source
 COPY src ./src
 COPY index.html ./
-COPY public ./public
+COPY public* ./public/ 2>/dev/null || true
 
 # Build de production
 RUN npm run build
