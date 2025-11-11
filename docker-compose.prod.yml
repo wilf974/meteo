@@ -27,6 +27,7 @@ services:
       DATABASE_HOST: postgres
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      CORS_ORIGIN: https://meteoproapp.woutils.com
     volumes:
       - ./backend/logs:/app/logs
     deploy:
@@ -40,8 +41,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        VITE_API_URL: https://meteoproapp.votredomaine.com
-        VITE_WS_URL: wss://meteoproapp.votredomaine.com
+        VITE_API_URL: https://meteoproapp.woutils.com
+        VITE_WS_URL: wss://meteoproapp.woutils.com
     restart: always
     deploy:
       resources:
