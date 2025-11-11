@@ -31,8 +31,8 @@ export default function Timeline() {
   };
 
   return (
-    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-gray-800 rounded-lg shadow-xl border border-gray-700 px-6 py-3">
-      <div className="flex items-center gap-4">
+    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-gray-800 rounded-lg shadow-xl border border-gray-700 px-3 md:px-6 py-2 md:py-3 max-w-[95vw]">
+      <div className="flex items-center gap-2 md:gap-4">
         <button
           onClick={handlePrevious}
           className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
@@ -58,8 +58,13 @@ export default function Timeline() {
           <SkipForward className="w-5 h-5 text-white" />
         </button>
 
-        <div className="ml-4 text-white font-medium">
-          {format(timelinePosition, 'dd MMM yyyy - HH:mm', { locale: fr })}
+        <div className="ml-2 md:ml-4 text-white font-medium text-xs md:text-base whitespace-nowrap">
+          <span className="hidden md:inline">
+            {format(timelinePosition, 'dd MMM yyyy - HH:mm', { locale: fr })}
+          </span>
+          <span className="md:hidden">
+            {format(timelinePosition, 'dd/MM HH:mm', { locale: fr })}
+          </span>
         </div>
       </div>
     </div>

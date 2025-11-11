@@ -18,7 +18,7 @@ export default function WeatherInfo() {
   if (!selectedPoint) return null;
 
   return (
-    <div className="absolute bottom-24 left-4 z-[1000] bg-gray-800 rounded-lg shadow-xl border border-gray-700 w-80 animate-in slide-in-from-left duration-300">
+    <div className="absolute bottom-20 md:bottom-24 left-4 right-4 md:right-auto z-[1000] bg-gray-800 rounded-lg shadow-xl border border-gray-700 w-auto md:w-80 animate-in slide-in-from-left duration-300">
       <div className="flex items-center justify-between p-4 border-b border-gray-700">
         <h3 className="font-semibold text-white">Météo actuelle</h3>
         <button

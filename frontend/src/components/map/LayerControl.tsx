@@ -1,26 +1,67 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMapStore } from '../../store/mapStore';
-import { Layers, ChevronDown, ChevronUp } from 'lucide-react';
+import { Layers, ChevronDown, ChevronUp, X } from 'lucide-react';
 
 export default function LayerControl() {
-  const [isOpen, setIsOpen] = useState(true);
+  // Détecter si on est sur mobile et fermer le panneau par défaut
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { activeLayers, toggleLayer, setLayerOpacity } = useMapStore();
 
-  return (
-    <div className="absolute top-4 right-4 z-[1000] bg-gray-800 rounded-lg shadow-xl border border-gray-700 w-80">
-      <div
-        className="flex items-center justify-between p-4 cursor-pointer"
-        onClick={() => setIsOpen(!isOpen)}
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setIsOpen(true); // Ouvrir par défaut sur desktop
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Sur mobile, afficher un bouton flottant compact
+  if (isMobile && !isOpen) {
+    return (
+      <button
+        onClick={() => setIsOpen(true)}
+        className="absolute top-4 right-4 z-[1000] bg-blue-600 hover:bg-blue-700 rounded-full p-3 shadow-xl transition-all hover:scale-110"
       >
+        <Layers className="w-6 h-6 text-white" />
+      </button>
+    );
+  }
+
+  return (
+    <div className="absolute top-4 right-4 z-[1000] bg-gray-800 rounded-lg shadow-xl border border-gray-700 w-80 md:w-80 sm:w-[calc(100vw-2rem)] max-w-sm animate-in slide-in-from-right duration-200">
+      <div className="flex items-center justify-between p-4 border-b border-gray-700">
         <div className="flex items-center gap-2">
           <Layers className="w-5 h-5 text-blue-500" />
           <h3 className="font-semibold text-white">Couches météo</h3>
         </div>
-        {isOpen ? (
-          <ChevronUp className="w-5 h-5 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-5 h-5 text-gray-400" />
-        )}
+        <div className="flex items-center gap-2">
+          {!isMobile && (
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              {isOpen ? (
+                <ChevronUp className="w-5 h-5" />
+              ) : (
+                <ChevronDown className="w-5 h-5" />
+              )}
+            </button>
+          )}
+          {isMobile && (
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-gray-400 hover:text-white transition-colors hover:scale-110"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {isOpen && (
