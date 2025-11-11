@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMapStore } from '../../store/mapStore';
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { format, addHours, subHours } from 'date-fns';
@@ -6,6 +6,17 @@ import { fr } from 'date-fns/locale';
 
 export default function Timeline() {
   const { timelinePosition, setTimelinePosition, isPlaying, setIsPlaying } = useMapStore();
+
+  // Animation automatique quand isPlaying est true
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const interval = setInterval(() => {
+      setTimelinePosition(addHours(timelinePosition, 1));
+    }, 1000); // Avance d'1 heure toutes les secondes
+
+    return () => clearInterval(interval);
+  }, [isPlaying, timelinePosition, setTimelinePosition]);
 
   const handlePlayPause = () => {
     setIsPlaying(!isPlaying);

@@ -7,6 +7,7 @@ import LayerControl from '../components/map/LayerControl';
 import WeatherInfo from '../components/map/WeatherInfo';
 import Timeline from '../components/map/Timeline';
 import WeatherLayers from '../components/map/WeatherLayers';
+import WindParticles from '../components/map/WindParticles';
 import 'leaflet/dist/leaflet.css';
 
 function MapEvents() {
@@ -57,6 +58,7 @@ export default function MapPage() {
         />
 
         <WeatherLayers />
+        <WindParticles />
         <MapEvents />
       </MapContainer>
 

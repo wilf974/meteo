@@ -18,12 +18,12 @@ export default function WeatherInfo() {
   if (!selectedPoint) return null;
 
   return (
-    <div className="absolute bottom-24 left-4 z-[1000] bg-gray-800 rounded-lg shadow-xl border border-gray-700 w-80">
+    <div className="absolute bottom-24 left-4 z-[1000] bg-gray-800 rounded-lg shadow-xl border border-gray-700 w-80 animate-in slide-in-from-left duration-300">
       <div className="flex items-center justify-between p-4 border-b border-gray-700">
         <h3 className="font-semibold text-white">Météo actuelle</h3>
         <button
           onClick={() => setSelectedPoint(null)}
-          className="text-gray-400 hover:text-white transition-colors"
+          className="text-gray-400 hover:text-white hover:scale-110 transition-all"
         >
           <X className="w-5 h-5" />
         </button>
