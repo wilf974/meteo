@@ -29,8 +29,10 @@ interface MapState {
 export const useMapStore = create<MapState>((set) => ({
   activeLayers: [
     { id: 'temperature', name: 'Température', type: 'heatmap', enabled: true, opacity: 0.7, order: 1 },
-    { id: 'precipitation', name: 'Précipitations', type: 'overlay', enabled: false, opacity: 0.6, order: 2 },
-    { id: 'wind', name: 'Vent', type: 'vector', enabled: false, opacity: 0.5, order: 3 },
+    { id: 'precipitation', name: 'Précipitations', type: 'overlay', enabled: false, opacity: 0.8, order: 2 },
+    { id: 'wind', name: 'Vent', type: 'vector', enabled: false, opacity: 0.6, order: 3 },
+    { id: 'clouds', name: 'Nuages', type: 'overlay', enabled: false, opacity: 0.5, order: 4 },
+    { id: 'pressure', name: 'Pression', type: 'heatmap', enabled: false, opacity: 0.6, order: 5 },
   ],
   center: [46.603354, 1.888334], // Centre de la France
   zoom: 6,

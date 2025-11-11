@@ -6,6 +6,7 @@ import { socketService } from '../lib/socket';
 import LayerControl from '../components/map/LayerControl';
 import WeatherInfo from '../components/map/WeatherInfo';
 import Timeline from '../components/map/Timeline';
+import WeatherLayers from '../components/map/WeatherLayers';
 import 'leaflet/dist/leaflet.css';
 
 function MapEvents() {
@@ -55,6 +56,7 @@ export default function MapPage() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        <WeatherLayers />
         <MapEvents />
       </MapContainer>
 
