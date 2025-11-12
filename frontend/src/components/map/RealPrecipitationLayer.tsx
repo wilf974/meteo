@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useMap } from 'react-leaflet';
 import { useMapStore } from '../../store/mapStore';
-import { getForecast, getWeatherAtTime, type ForecastResponse } from '../../services/openMeteo.service';
+import { getWeatherAtTime, type ForecastResponse } from '../../services/openMeteo.service';
+import { weatherCache } from '../../services/weatherCache.service';
 
 interface GridPoint {
   lat: number;
@@ -45,7 +46,7 @@ export default function RealPrecipitationLayer() {
             const lat = bounds.getSouth() + i * latStep;
             const lon = bounds.getWest() + j * lonStep;
 
-            const promise = getForecast(lat, lon)
+            const promise = weatherCache.getForecast(lat, lon)
               .then(forecast => {
                 newGridData.push({ lat, lon, forecast });
               })
