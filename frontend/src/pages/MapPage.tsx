@@ -6,10 +6,10 @@ import { socketService } from '../lib/socket';
 import LayerControl from '../components/map/LayerControl';
 import WeatherInfo from '../components/map/WeatherInfo';
 import Timeline from '../components/map/Timeline';
-import TemperatureHeatmap from '../components/map/TemperatureHeatmap';
-import PrecipitationOverlay from '../components/map/PrecipitationOverlay';
-import WindOverlay from '../components/map/WindOverlay';
-import CloudOverlay from '../components/map/CloudOverlay';
+import RealTemperatureLayer from '../components/map/RealTemperatureLayer';
+import RealPrecipitationLayer from '../components/map/RealPrecipitationLayer';
+import RealWindLayer from '../components/map/RealWindLayer';
+import RealCloudLayer from '../components/map/RealCloudLayer';
 import 'leaflet/dist/leaflet.css';
 
 function MapEvents() {
@@ -59,11 +59,11 @@ export default function MapPage() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* Open-Meteo overlays - vraies animations basées sur forecast data */}
-        <TemperatureHeatmap />
-        <CloudOverlay />
-        <PrecipitationOverlay />
-        <WindOverlay />
+        {/* Open-Meteo grid-based layers - vraies zones météo qui se déplacent */}
+        <RealTemperatureLayer />
+        <RealCloudLayer />
+        <RealPrecipitationLayer />
+        <RealWindLayer />
         <MapEvents />
       </MapContainer>
 
