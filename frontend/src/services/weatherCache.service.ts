@@ -99,10 +99,11 @@ class WeatherCacheService {
         this.pendingRequests.delete(key);
         this.limitCacheSize();
 
+        // DISABLED: Prefetching was causing too many API calls and slowdowns
         // Prefetch adjacent cells (only for main requests, not for prefetch requests)
-        if (!prefetch) {
-          this.prefetchAdjacentCells(lat, lon);
-        }
+        // if (!prefetch) {
+        //   this.prefetchAdjacentCells(lat, lon);
+        // }
 
         return forecast;
       })

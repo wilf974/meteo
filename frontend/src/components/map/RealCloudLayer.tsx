@@ -24,11 +24,14 @@ export default function RealCloudLayer() {
   useEffect(() => {
     if (!isEnabled) return;
 
+    let debounceTimer: NodeJS.Timeout;
+
     const fetchGridData = async () => {
       try {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
-        const gridSize = zoom > 8 ? 15 : zoom > 6 ? 10 : 8;
+        // OPTIMIZED: Reduced grid size for better performance (max 6x6 = 36 points instead of 15x15 = 256)
+        const gridSize = zoom > 10 ? 6 : zoom > 7 ? 5 : 4;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -63,14 +66,21 @@ export default function RealCloudLayer() {
       }
     };
 
+    // Debounced fetch handler
+    const debouncedFetch = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(fetchGridData, 300);
+    };
+
     fetchGridData();
 
-    map.on('moveend', fetchGridData);
-    map.on('zoomend', fetchGridData);
+    map.on('moveend', debouncedFetch);
+    map.on('zoomend', debouncedFetch);
 
     return () => {
-      map.off('moveend', fetchGridData);
-      map.off('zoomend', fetchGridData);
+      clearTimeout(debounceTimer);
+      map.off('moveend', debouncedFetch);
+      map.off('zoomend', debouncedFetch);
     };
   }, [map, isEnabled]);
 
@@ -158,12 +168,22 @@ export default function RealCloudLayer() {
       ctx.globalCompositeOperation = 'source-over';
     };
 
-    const animate = () => {
-      draw();
+    // Throttled animation: 15fps instead of 60fps for better performance
+    let lastFrameTime = 0;
+    const targetFPS = 15;
+    const frameInterval = 1000 / targetFPS;
+
+    const animate = (currentTime: number) => {
       animationRef.current = requestAnimationFrame(animate);
+
+      const elapsed = currentTime - lastFrameTime;
+      if (elapsed > frameInterval) {
+        lastFrameTime = currentTime - (elapsed % frameInterval);
+        draw();
+      }
     };
 
-    animate();
+    animationRef.current = requestAnimationFrame(animate);
 
     return () => {
       if (animationRef.current) {
