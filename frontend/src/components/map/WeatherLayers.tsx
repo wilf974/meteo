@@ -14,35 +14,25 @@ const LAYER_MAP: Record<string, string> = {
 };
 
 export default function WeatherLayers() {
-  const { activeLayers, timelinePosition } = useMapStore();
-  const [timestamp, setTimestamp] = useState<number>(Date.now());
+  const { activeLayers } = useMapStore();
 
-  // Mettre à jour le timestamp quand la timeline change
-  useEffect(() => {
-    const selectedTime = new Date(timelinePosition);
-    setTimestamp(Math.floor(selectedTime.getTime() / 1000));
-  }, [timelinePosition]);
+  // Note: Les tuiles gratuites OpenWeatherMap affichent TOUJOURS les données actuelles
+  // Elles ne supportent PAS les timestamps historiques ou futurs
+  // C'est pourquoi elles ne changent pas avec la timeline
 
   return (
     <>
       {activeLayers
         .filter((layer) => layer.enabled && LAYER_MAP[layer.id])
         .sort((a, b) => a.order - b.order)
-        .map((layer) => {
-          // Ajouter le timestamp pour animer les couches selon l'horaire
-          // Note: Les tuiles gratuites OpenWeatherMap ne supportent que les données actuelles
-          // Pour les données temporelles, il faudrait un abonnement payant
-          const url = `https://tile.openweathermap.org/map/${LAYER_MAP[layer.id]}/{z}/{x}/{y}.png?appid=${API_KEY}`;
-
-          return (
-            <TileLayer
-              key={`${layer.id}-${timestamp}`}
-              url={url}
-              opacity={layer.opacity}
-              attribution='&copy; <a href="https://openweathermap.org">OpenWeatherMap</a>'
-            />
-          );
-        })}
+        .map((layer) => (
+          <TileLayer
+            key={layer.id}
+            url={`https://tile.openweathermap.org/map/${LAYER_MAP[layer.id]}/{z}/{x}/{y}.png?appid=${API_KEY}`}
+            opacity={layer.opacity}
+            attribution='&copy; <a href="https://openweathermap.org">OpenWeatherMap</a>'
+          />
+        ))}
     </>
   );
 }

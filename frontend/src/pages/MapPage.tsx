@@ -7,9 +7,9 @@ import LayerControl from '../components/map/LayerControl';
 import WeatherInfo from '../components/map/WeatherInfo';
 import Timeline from '../components/map/Timeline';
 import WeatherLayers from '../components/map/WeatherLayers';
-import EnhancedWindAnimation from '../components/map/EnhancedWindAnimation';
-import EnhancedRainAnimation from '../components/map/EnhancedRainAnimation';
-// Désactivé: animations custom inutiles de nuages
+// Toutes les animations custom sont désactivées - on va créer un vrai système de forecast
+// import EnhancedWindAnimation from '../components/map/EnhancedWindAnimation';
+// import EnhancedRainAnimation from '../components/map/EnhancedRainAnimation';
 // import EnhancedCloudAnimation from '../components/map/EnhancedCloudAnimation';
 import 'leaflet/dist/leaflet.css';
 
@@ -61,10 +61,9 @@ export default function MapPage() {
         />
 
         <WeatherLayers />
-        {/* Désactivé: animations custom inutiles - on utilise les vraies tuiles OpenWeatherMap */}
-        {/* <EnhancedCloudAnimation /> */}
-        <EnhancedWindAnimation />
-        <EnhancedRainAnimation />
+        {/* Toutes animations custom désactivées - les tuiles OpenWeatherMap ne supportent pas les timestamps */}
+        {/* <EnhancedWindAnimation /> */}
+        {/* <EnhancedRainAnimation /> */}
         <MapEvents />
       </MapContainer>
 
