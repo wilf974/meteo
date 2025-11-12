@@ -189,29 +189,6 @@ export default function RealPrecipitationLayer() {
 
       // Reset composite operation for UI elements
       ctx.globalCompositeOperation = 'source-over';
-
-      // Draw simplified legend
-      if (precipCount > 0) {
-        const precipStats = gridDataRef.current
-          .filter(p => p.forecast)
-          .map(p => {
-            const data = getWeatherAtTime(p.forecast!, selectedTime);
-            if (!data) return 0;
-            return data.precipitation + data.rain + data.showers;
-          });
-
-        const maxTotal = Math.max(...precipStats);
-
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-        ctx.fillRect(10, canvas.height - 70, 200, 60);
-
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.fillText(`💧 Précipitations`, 20, canvas.height - 45);
-        ctx.font = '12px sans-serif';
-        ctx.fillText(`Max: ${maxTotal.toFixed(1)} mm/h`, 20, canvas.height - 25);
-      }
     };
 
     const animate = () => {

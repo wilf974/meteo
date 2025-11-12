@@ -120,30 +120,6 @@ export default function RealWindLayer() {
           opacity
         );
       });
-
-      // Show max wind speed with compact legend
-      const windSpeeds = gridDataRef.current
-        .filter(p => p.forecast)
-        .map(p => {
-          const data = getWeatherAtTime(p.forecast!, selectedTime);
-          return data ? data.windSpeed : 0;
-        });
-
-      if (windSpeeds.length > 0) {
-        const maxWind = Math.max(...windSpeeds);
-
-        if (maxWind > 1) {
-          ctx.globalAlpha = 1;
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-          ctx.fillRect(10, 70, 160, 50);
-
-          ctx.fillStyle = 'white';
-          ctx.font = 'bold 14px sans-serif';
-          ctx.fillText(`🌬️ Vent`, 20, 90);
-          ctx.font = '12px sans-serif';
-          ctx.fillText(`Max: ${maxWind.toFixed(0)} km/h`, 20, 108);
-        }
-      }
     };
 
     const animate = () => {

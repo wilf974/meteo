@@ -144,28 +144,6 @@ export default function RealTemperatureLayer() {
 
       // Reset composite operation
       ctx.globalCompositeOperation = 'source-over';
-
-      // Show temperature range
-      const temps = gridDataRef.current
-        .filter(p => p.forecast)
-        .map(p => {
-          const data = getWeatherAtTime(p.forecast!, selectedTime);
-          return data ? data.temperature : null;
-        })
-        .filter(t => t !== null) as number[];
-
-      if (temps.length > 0) {
-        const minTemp = Math.min(...temps);
-        const maxTemp = Math.max(...temps);
-
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(10, 10, 180, 50);
-
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.fillText(`🌡️ ${minTemp.toFixed(1)}°C - ${maxTemp.toFixed(1)}°C`, 20, 35);
-      }
     };
 
     const animate = () => {
