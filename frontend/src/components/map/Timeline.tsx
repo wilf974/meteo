@@ -1,72 +1,280 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useMapStore } from '../../store/mapStore';
-import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
-import { format, addHours, subHours } from 'date-fns';
+import { Play, Pause, SkipBack, SkipForward, Clock, Moon, Sun } from 'lucide-react';
+import { format, addHours, subHours, differenceInHours } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-export default function Timeline() {
+const Timeline = memo(function Timeline() {
   const { timelinePosition, setTimelinePosition, isPlaying, setIsPlaying } = useMapStore();
+  const [showSlider, setShowSlider] = useState(false);
 
-  // Animation automatique quand isPlaying est true
+  const now = new Date();
+  const minDate = subHours(now, 24); // 24h dans le passé
+  const maxDate = addHours(now, 168); // 7 jours dans le futur
+  const totalHours = differenceInHours(maxDate, minDate);
+  const currentHours = differenceInHours(timelinePosition, minDate);
+  const sliderValue = (currentHours / totalHours) * 100;
+
+  // Animation automatique
   useEffect(() => {
     if (!isPlaying) return;
 
     const interval = setInterval(() => {
-      setTimelinePosition(addHours(timelinePosition, 1));
-    }, 1000); // Avance d'1 heure toutes les secondes
+      const newTime = addHours(timelinePosition, 1);
+      if (newTime <= maxDate) {
+        setTimelinePosition(newTime);
+      } else {
+        setIsPlaying(false); // Stop at the end
+      }
+    }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPlaying, timelinePosition, setTimelinePosition]);
+  }, [isPlaying, timelinePosition, setTimelinePosition, setIsPlaying]);
 
   const handlePlayPause = () => {
     setIsPlaying(!isPlaying);
   };
 
   const handlePrevious = () => {
-    setTimelinePosition(subHours(timelinePosition, 3));
+    const newTime = subHours(timelinePosition, 3);
+    setTimelinePosition(newTime >= minDate ? newTime : minDate);
   };
 
   const handleNext = () => {
-    setTimelinePosition(addHours(timelinePosition, 3));
+    const newTime = addHours(timelinePosition, 3);
+    setTimelinePosition(newTime <= maxDate ? newTime : maxDate);
   };
 
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    const hours = Math.round((value / 100) * totalHours);
+    const newTime = addHours(minDate, hours);
+    setTimelinePosition(newTime);
+  };
+
+  const handleNow = () => {
+    setTimelinePosition(now);
+    setIsPlaying(false);
+  };
+
+  // Determine if day or night
+  const hour = timelinePosition.getHours();
+  const isDaytime = hour >= 6 && hour < 20;
+
+  // Check if current time
+  const isNow = Math.abs(differenceInHours(timelinePosition, now)) < 1;
+
   return (
-    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-gray-800 rounded-lg shadow-xl border border-gray-700 px-3 md:px-6 py-2 md:py-3 max-w-[95vw]">
-      <div className="flex items-center gap-2 md:gap-4">
+    <div
+      style={{
+        position: 'absolute',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 1000,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: '16px',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(0, 0, 0, 0.08)',
+        padding: '16px 24px',
+        maxWidth: 'calc(100vw - 40px)',
+        minWidth: '320px',
+      }}
+      onMouseEnter={() => setShowSlider(true)}
+      onMouseLeave={() => setShowSlider(false)}
+    >
+      {/* Main Controls */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', justifyContent: 'center' }}>
+        {/* Previous */}
         <button
           onClick={handlePrevious}
-          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '8px',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            transition: 'all 0.2s',
+            color: '#6b7280',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+            e.currentTarget.style.color = '#111827';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = '#6b7280';
+          }}
         >
-          <SkipBack className="w-5 h-5 text-white" />
+          <SkipBack style={{ width: '20px', height: '20px' }} />
         </button>
 
+        {/* Play/Pause */}
         <button
           onClick={handlePlayPause}
-          className="p-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+          style={{
+            background: isPlaying
+              ? 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)'
+              : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '12px',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            transition: 'all 0.3s',
+            boxShadow: isPlaying
+              ? '0 4px 12px rgba(245, 158, 11, 0.4)'
+              : '0 4px 12px rgba(102, 126, 234, 0.4)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
         >
           {isPlaying ? (
-            <Pause className="w-5 h-5 text-white" />
+            <Pause style={{ width: '20px', height: '20px', color: 'white' }} />
           ) : (
-            <Play className="w-5 h-5 text-white" />
+            <Play style={{ width: '20px', height: '20px', color: 'white' }} />
           )}
         </button>
 
+        {/* Next */}
         <button
           onClick={handleNext}
-          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '8px',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            transition: 'all 0.2s',
+            color: '#6b7280',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+            e.currentTarget.style.color = '#111827';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = '#6b7280';
+          }}
         >
-          <SkipForward className="w-5 h-5 text-white" />
+          <SkipForward style={{ width: '20px', height: '20px' }} />
         </button>
 
-        <div className="ml-2 md:ml-4 text-white font-medium text-xs md:text-base whitespace-nowrap">
-          <span className="hidden md:inline">
-            {format(timelinePosition, 'dd MMM yyyy - HH:mm', { locale: fr })}
-          </span>
-          <span className="md:hidden">
-            {format(timelinePosition, 'dd/MM HH:mm', { locale: fr })}
-          </span>
+        {/* Divider */}
+        <div style={{ width: '1px', height: '32px', backgroundColor: 'rgba(0, 0, 0, 0.1)' }} />
+
+        {/* Date/Time Display */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Day/Night Indicator */}
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              backgroundColor: isDaytime ? 'rgba(251, 191, 36, 0.1)' : 'rgba(99, 102, 241, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {isDaytime ? (
+              <Sun style={{ width: '20px', height: '20px', color: '#fbbf24' }} />
+            ) : (
+              <Moon style={{ width: '20px', height: '20px', color: '#6366f1' }} />
+            )}
+          </div>
+
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#111827' }}>
+              {format(timelinePosition, 'HH:mm', { locale: fr })}
+            </div>
+            <div style={{ fontSize: '11px', color: '#6b7280' }}>
+              {format(timelinePosition, 'dd MMM yyyy', { locale: fr })}
+            </div>
+          </div>
         </div>
+
+        {/* Now Button */}
+        {!isNow && (
+          <>
+            <div style={{ width: '1px', height: '32px', backgroundColor: 'rgba(0, 0, 0, 0.1)' }} />
+            <button
+              onClick={handleNow}
+              style={{
+                background: 'rgba(59, 130, 246, 0.1)',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
+                cursor: 'pointer',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+                fontSize: '12px',
+                fontWeight: '600',
+                color: '#3b82f6',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+              }}
+            >
+              <Clock style={{ width: '14px', height: '14px' }} />
+              <span>Maintenant</span>
+            </button>
+          </>
+        )}
       </div>
+
+      {/* Slider (shown on hover) */}
+      {showSlider && (
+        <div
+          style={{
+            marginTop: '16px',
+            paddingTop: '16px',
+            borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '11px', color: '#9ca3af', minWidth: '60px' }}>
+              {format(minDate, 'dd/MM HH:mm')}
+            </span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="0.5"
+              value={sliderValue}
+              onChange={handleSliderChange}
+              style={{
+                flex: 1,
+                height: '6px',
+                borderRadius: '3px',
+                outline: 'none',
+                cursor: 'pointer',
+                accentColor: '#667eea',
+              }}
+            />
+            <span style={{ fontSize: '11px', color: '#9ca3af', minWidth: '60px', textAlign: 'right' }}>
+              {format(maxDate, 'dd/MM HH:mm')}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+});
+
+export default Timeline;

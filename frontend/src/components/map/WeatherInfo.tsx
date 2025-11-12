@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { useMapStore } from '../../store/mapStore';
 import { weatherCache } from '../../services/weatherCache.service';
 import { getWeatherAtTime, type WeatherData } from '../../services/openMeteo.service';
@@ -50,7 +50,7 @@ function getWeatherEmoji(weatherCode: number): string {
   return '🌤️';
 }
 
-export default function WeatherInfo() {
+const WeatherInfo = memo(function WeatherInfo() {
   const { selectedPoint, setSelectedPoint, timelinePosition } = useMapStore();
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -281,4 +281,6 @@ export default function WeatherInfo() {
       </div>
     </div>
   );
-}
+});
+
+export default WeatherInfo;

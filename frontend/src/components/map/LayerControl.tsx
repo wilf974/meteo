@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useMapStore } from '../../store/mapStore';
 import { Layers, ChevronDown, ChevronUp, X, Thermometer, Cloud, Wind, Droplets } from 'lucide-react';
 
@@ -9,7 +9,7 @@ const LAYER_ICONS: { [key: string]: { icon: React.ElementType; color: string; bg
   clouds: { icon: Cloud, color: '#9ca3af', bgColor: 'rgba(156, 163, 175, 0.1)' },
 };
 
-export default function LayerControl() {
+const LayerControl = memo(function LayerControl() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const { activeLayers, toggleLayer, setLayerOpacity } = useMapStore();
@@ -286,4 +286,6 @@ export default function LayerControl() {
       )}
     </div>
   );
-}
+});
+
+export default LayerControl;

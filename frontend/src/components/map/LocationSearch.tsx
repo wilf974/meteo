@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { useMap } from 'react-leaflet';
 import { searchLocations, formatLocationName, type GeocodingResult } from '../../services/geocoding.service';
 
-export default function LocationSearch() {
+const LocationSearch = memo(function LocationSearch() {
   const map = useMap();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<GeocodingResult[]>([]);
@@ -281,4 +281,6 @@ export default function LocationSearch() {
       )}
     </div>
   );
-}
+});
+
+export default LocationSearch;

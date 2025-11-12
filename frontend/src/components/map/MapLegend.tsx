@@ -1,5 +1,5 @@
 import { useMapStore } from '../../store/mapStore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { getWeatherAtTime } from '../../services/openMeteo.service';
 import { weatherCache } from '../../services/weatherCache.service';
 
@@ -10,7 +10,7 @@ interface LayerStats {
   clouds?: { coverage: number };
 }
 
-export default function MapLegend() {
+const MapLegend = memo(function MapLegend() {
   const { activeLayers, center, timelinePosition } = useMapStore();
   const [stats, setStats] = useState<LayerStats>({});
   const [isMinimized, setIsMinimized] = useState(false);
@@ -248,4 +248,6 @@ export default function MapLegend() {
       )}
     </div>
   );
-}
+});
+
+export default MapLegend;
