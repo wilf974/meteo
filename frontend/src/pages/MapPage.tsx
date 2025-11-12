@@ -7,9 +7,9 @@ import LayerControl from '../components/map/LayerControl';
 import WeatherInfo from '../components/map/WeatherInfo';
 import Timeline from '../components/map/Timeline';
 import WeatherLayers from '../components/map/WeatherLayers';
-import RealisticWindParticles from '../components/map/RealisticWindParticles';
-import RainAnimation from '../components/map/RainAnimation';
-import CloudAnimation from '../components/map/CloudAnimation';
+import EnhancedWindAnimation from '../components/map/EnhancedWindAnimation';
+import EnhancedRainAnimation from '../components/map/EnhancedRainAnimation';
+import EnhancedCloudAnimation from '../components/map/EnhancedCloudAnimation';
 import 'leaflet/dist/leaflet.css';
 
 function MapEvents() {
@@ -60,9 +60,9 @@ export default function MapPage() {
         />
 
         <WeatherLayers />
-        <CloudAnimation />
-        <RealisticWindParticles />
-        <RainAnimation />
+        <EnhancedCloudAnimation />
+        <EnhancedWindAnimation />
+        <EnhancedRainAnimation />
         <MapEvents />
       </MapContainer>
 
