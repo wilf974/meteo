@@ -28,7 +28,7 @@ export default function RealWindLayer() {
       try {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
-        const gridSize = zoom > 8 ? 12 : zoom > 6 ? 8 : 6;
+        const gridSize = zoom > 8 ? 15 : zoom > 6 ? 10 : 8;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;

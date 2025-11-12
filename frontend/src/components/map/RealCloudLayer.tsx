@@ -28,7 +28,7 @@ export default function RealCloudLayer() {
       try {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
-        const gridSize = zoom > 8 ? 12 : zoom > 6 ? 8 : 6;
+        const gridSize = zoom > 8 ? 15 : zoom > 6 ? 10 : 8;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -108,31 +108,34 @@ export default function RealCloudLayer() {
         const screenPoint = map.latLngToContainerPoint(latLng);
 
         const cloudCover = weatherData.cloudCover / 100; // 0-1
-        const zoneSize = 200; // Larger zones
+        const zoneSize = 250; // MUCH larger zones
+
+        // OPACITY MAXIMALE pour les nuages
+        const alpha = Math.min(0.85, Math.max(0.45, cloudCover * 0.95)) * opacity; // Min 0.45, max 0.85!
 
         const gradient = ctx.createRadialGradient(
           screenPoint.x, screenPoint.y, 0,
-          screenPoint.x, screenPoint.y, zoneSize
+          screenPoint.x, screenPoint.y, zoneSize * 0.8
         );
 
-        // Much more visible clouds with gray tint
-        const alpha = Math.max(0.25, cloudCover * 0.8) * opacity; // Minimum 0.25, max 0.8
-
         if (cloudCover < 0.3) {
-          // Few clouds - light gray/white
-          gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
-          gradient.addColorStop(0.5, `rgba(240, 240, 245, ${alpha * 0.6})`);
-          gradient.addColorStop(1, `rgba(230, 230, 240, 0)`);
+          // Few clouds - VERY white/bright
+          gradient.addColorStop(0, `rgba(250, 250, 255, ${alpha})`);
+          gradient.addColorStop(0.4, `rgba(235, 235, 245, ${alpha * 0.8})`);
+          gradient.addColorStop(0.7, `rgba(220, 220, 235, ${alpha * 0.5})`);
+          gradient.addColorStop(1, `rgba(200, 200, 220, 0)`);
         } else if (cloudCover < 0.7) {
-          // Moderate clouds - gray
-          gradient.addColorStop(0, `rgba(220, 220, 230, ${alpha})`);
-          gradient.addColorStop(0.5, `rgba(200, 200, 215, ${alpha * 0.6})`);
-          gradient.addColorStop(1, `rgba(180, 180, 200, 0)`);
+          // Moderate clouds - STRONG gray
+          gradient.addColorStop(0, `rgba(200, 200, 215, ${alpha})`);
+          gradient.addColorStop(0.4, `rgba(180, 180, 200, ${alpha * 0.8})`);
+          gradient.addColorStop(0.7, `rgba(160, 160, 185, ${alpha * 0.5})`);
+          gradient.addColorStop(1, `rgba(140, 140, 170, 0)`);
         } else {
-          // Heavy clouds - dark gray
-          gradient.addColorStop(0, `rgba(180, 180, 190, ${alpha})`);
-          gradient.addColorStop(0.5, `rgba(160, 160, 175, ${alpha * 0.6})`);
-          gradient.addColorStop(1, `rgba(140, 140, 160, 0)`);
+          // Heavy clouds - VERY DARK gray - TRES FONCE
+          gradient.addColorStop(0, `rgba(140, 140, 160, ${alpha})`);
+          gradient.addColorStop(0.4, `rgba(120, 120, 145, ${alpha * 0.8})`);
+          gradient.addColorStop(0.7, `rgba(100, 100, 130, ${alpha * 0.5})`);
+          gradient.addColorStop(1, `rgba(80, 80, 110, 0)`);
         }
 
         ctx.fillStyle = gradient;
@@ -142,6 +145,15 @@ export default function RealCloudLayer() {
           zoneSize * 2,
           zoneSize * 2
         );
+
+        // Add visible border for clouds
+        if (cloudCover > 0.5) {
+          ctx.strokeStyle = `rgba(120, 120, 140, ${alpha * 0.6})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(screenPoint.x, screenPoint.y, zoneSize * 0.65, 0, Math.PI * 2);
+          ctx.stroke();
+        }
       });
     };
 

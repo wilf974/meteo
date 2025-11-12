@@ -30,8 +30,8 @@ export default function RealPrecipitationLayer() {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
 
-        // Adjust grid density based on zoom level - increased density
-        const gridSize = zoom > 8 ? 12 : zoom > 6 ? 8 : 6;
+        // Adjust grid density - MAXIMUM DENSITY for best coverage
+        const gridSize = zoom > 8 ? 15 : zoom > 6 ? 10 : 8;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -150,31 +150,36 @@ export default function RealPrecipitationLayer() {
         const precip = totalPrecip;
         const intensity = Math.min(precip / 10, 1); // Normalize to 0-1 (adjusted for better visibility)
 
-        // Draw zone with gradient based on intensity - MUCH MORE VISIBLE
-        const zoneSize = 200; // Larger zones
+        // Draw zone EXTREMELY VISIBLE - TRÈS VISIBLE
+        const zoneSize = 250; // MUCH larger zones
+
+        // OPACITÉ MAXIMALE - presque opaque
+        const alpha = Math.min(0.95, Math.max(0.6, intensity)) * opacity; // Minimum 0.6, max 0.95!
+
+        // Create a more solid gradient with less transparency
         const gradient = ctx.createRadialGradient(
           screenPoint.x, screenPoint.y, 0,
-          screenPoint.x, screenPoint.y, zoneSize
+          screenPoint.x, screenPoint.y, zoneSize * 0.8
         );
 
-        // Stronger colors based on intensity
-        const alpha = Math.max(0.3, intensity) * opacity * 0.9; // Minimum 0.3 alpha, max 0.9
-
         if (precip < 1) {
-          // Light rain - light blue
-          gradient.addColorStop(0, `rgba(150, 200, 255, ${alpha})`);
-          gradient.addColorStop(0.5, `rgba(100, 170, 255, ${alpha * 0.6})`);
-          gradient.addColorStop(1, `rgba(80, 150, 240, 0)`);
+          // Light rain - BRIGHT light blue
+          gradient.addColorStop(0, `rgba(100, 180, 255, ${alpha})`);
+          gradient.addColorStop(0.4, `rgba(80, 160, 255, ${alpha * 0.85})`);
+          gradient.addColorStop(0.7, `rgba(60, 140, 255, ${alpha * 0.5})`);
+          gradient.addColorStop(1, `rgba(40, 120, 240, 0)`);
         } else if (precip < 5) {
-          // Moderate rain - blue
-          gradient.addColorStop(0, `rgba(80, 150, 255, ${alpha})`);
-          gradient.addColorStop(0.5, `rgba(60, 120, 230, ${alpha * 0.6})`);
-          gradient.addColorStop(1, `rgba(40, 100, 200, 0)`);
+          // Moderate rain - STRONG blue
+          gradient.addColorStop(0, `rgba(50, 120, 255, ${alpha})`);
+          gradient.addColorStop(0.4, `rgba(40, 100, 240, ${alpha * 0.85})`);
+          gradient.addColorStop(0.7, `rgba(30, 80, 220, ${alpha * 0.5})`);
+          gradient.addColorStop(1, `rgba(20, 60, 200, 0)`);
         } else {
-          // Heavy rain - dark blue/purple
-          gradient.addColorStop(0, `rgba(60, 100, 200, ${alpha})`);
-          gradient.addColorStop(0.5, `rgba(40, 70, 170, ${alpha * 0.6})`);
-          gradient.addColorStop(1, `rgba(20, 50, 140, 0)`);
+          // Heavy rain - VERY DARK blue/purple - TRES FONCE
+          gradient.addColorStop(0, `rgba(30, 60, 200, ${alpha})`);
+          gradient.addColorStop(0.4, `rgba(20, 40, 180, ${alpha * 0.85})`);
+          gradient.addColorStop(0.7, `rgba(15, 30, 160, ${alpha * 0.5})`);
+          gradient.addColorStop(1, `rgba(10, 20, 140, 0)`);
         }
 
         ctx.fillStyle = gradient;
@@ -184,6 +189,13 @@ export default function RealPrecipitationLayer() {
           zoneSize * 2,
           zoneSize * 2
         );
+
+        // Add a bright border circle for extra visibility
+        ctx.strokeStyle = `rgba(100, 180, 255, ${alpha * 0.7})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(screenPoint.x, screenPoint.y, zoneSize * 0.6, 0, Math.PI * 2);
+        ctx.stroke();
       });
 
       // Draw legend and debug info - CHECK ALL PRECIPITATION TYPES
