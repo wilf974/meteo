@@ -117,12 +117,15 @@ export default function EnhancedRainAnimation() {
         };
       } catch (error) {
         console.error('Erreur récupération données météo:', error);
-        // Données de test
+      }
+
+      // DÉMO: Si pas de pluie, forcer un peu de pluie pour la démonstration
+      if (weatherDataRef.current.precipitation === 0) {
         weatherDataRef.current = {
-          precipitation: 5,
-          rainIntensity: 'moderate',
-          windSpeed: 3,
-          windDirection: 90,
+          precipitation: 3,
+          rainIntensity: 'light',
+          windSpeed: weatherDataRef.current.windSpeed,
+          windDirection: weatherDataRef.current.windDirection,
         };
       }
     };
@@ -151,6 +154,8 @@ export default function EnhancedRainAnimation() {
       const container = map.getContainer();
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
+      // Réinitialiser quand on resize
+      initRain();
     };
 
     resizeCanvas();
@@ -182,7 +187,6 @@ export default function EnhancedRainAnimation() {
     };
 
     const initRain = () => {
-      raindropsRef.current = [];
       const weather = weatherDataRef.current;
 
       let numDrops = 0;
@@ -193,13 +197,34 @@ export default function EnhancedRainAnimation() {
         default: numDrops = 0;
       }
 
-      for (let i = 0; i < numDrops; i++) {
-        raindropsRef.current.push(createRaindrop());
+      // Ajuster le nombre de gouttes au lieu de tout recréer
+      const currentCount = raindropsRef.current.length;
+
+      if (currentCount < numDrops) {
+        // Ajouter des gouttes
+        for (let i = currentCount; i < numDrops; i++) {
+          raindropsRef.current.push(createRaindrop());
+        }
+      } else if (currentCount > numDrops) {
+        // Retirer des gouttes
+        raindropsRef.current.splice(numDrops, currentCount - numDrops);
       }
     };
 
     const updateRain = () => {
       const weather = weatherDataRef.current;
+
+      // Réinitialiser si l'intensité a changé
+      const expectedCount = {
+        'light': 400,
+        'moderate': 800,
+        'heavy': 1500,
+        'none': 0
+      }[weather.rainIntensity] || 0;
+
+      if (Math.abs(raindropsRef.current.length - expectedCount) > 50) {
+        initRain();
+      }
 
       raindropsRef.current.forEach((drop) => {
         drop.y += drop.speed;
