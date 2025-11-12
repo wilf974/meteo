@@ -6,11 +6,10 @@ import { socketService } from '../lib/socket';
 import LayerControl from '../components/map/LayerControl';
 import WeatherInfo from '../components/map/WeatherInfo';
 import Timeline from '../components/map/Timeline';
-import WeatherLayers from '../components/map/WeatherLayers';
-// Toutes les animations custom sont désactivées - on va créer un vrai système de forecast
-// import EnhancedWindAnimation from '../components/map/EnhancedWindAnimation';
-// import EnhancedRainAnimation from '../components/map/EnhancedRainAnimation';
-// import EnhancedCloudAnimation from '../components/map/EnhancedCloudAnimation';
+import TemperatureHeatmap from '../components/map/TemperatureHeatmap';
+import PrecipitationOverlay from '../components/map/PrecipitationOverlay';
+import WindOverlay from '../components/map/WindOverlay';
+import CloudOverlay from '../components/map/CloudOverlay';
 import 'leaflet/dist/leaflet.css';
 
 function MapEvents() {
@@ -60,10 +59,11 @@ export default function MapPage() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <WeatherLayers />
-        {/* Toutes animations custom désactivées - les tuiles OpenWeatherMap ne supportent pas les timestamps */}
-        {/* <EnhancedWindAnimation /> */}
-        {/* <EnhancedRainAnimation /> */}
+        {/* Open-Meteo overlays - vraies animations basées sur forecast data */}
+        <TemperatureHeatmap />
+        <CloudOverlay />
+        <PrecipitationOverlay />
+        <WindOverlay />
         <MapEvents />
       </MapContainer>
 
