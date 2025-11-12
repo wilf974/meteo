@@ -12,6 +12,12 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    host: '0.0.0.0',
+    allowedHosts: [
+      'meteoproapp.woutils.com',
+      'localhost',
+      '127.0.0.1'
+    ],
     proxy: {
       '/api': {
         target: process.env.VITE_API_URL || 'http://localhost:3000',
