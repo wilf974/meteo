@@ -158,9 +158,6 @@ export default function EnhancedRainAnimation() {
       initRain();
     };
 
-    resizeCanvas();
-    map.on('resize', resizeCanvas);
-
     const createRaindrop = (): Raindrop => {
       const z = Math.random();
       const windAngle = ((weatherDataRef.current.windDirection - 90) * Math.PI) / 180;
@@ -210,6 +207,10 @@ export default function EnhancedRainAnimation() {
         raindropsRef.current.splice(numDrops, currentCount - numDrops);
       }
     };
+
+    // Initialiser le canvas après avoir défini les fonctions
+    resizeCanvas();
+    map.on('resize', resizeCanvas);
 
     const updateRain = () => {
       const weather = weatherDataRef.current;
