@@ -6,6 +6,10 @@ export interface WeatherData {
   time: string;
   temperature: number;
   precipitation: number;
+  rain: number;
+  showers: number;
+  snowfall: number;
+  weatherCode: number;
   windSpeed: number;
   windDirection: number;
   cloudCover: number;
@@ -20,6 +24,10 @@ export interface ForecastResponse {
     time: string[];
     temperature_2m: number[];
     precipitation: number[];
+    rain: number[];
+    showers: number[];
+    snowfall: number[];
+    weather_code: number[];
     wind_speed_10m: number[];
     wind_direction_10m: number[];
     cloud_cover: number[];
@@ -49,6 +57,10 @@ export async function getForecast(
       hourly: [
         'temperature_2m',
         'precipitation',
+        'rain',
+        'showers',
+        'snowfall',
+        'weather_code',
         'wind_speed_10m',
         'wind_direction_10m',
         'cloud_cover',
@@ -97,6 +109,10 @@ export function getWeatherAtTime(
     time: forecast.hourly.time[closestIndex],
     temperature: forecast.hourly.temperature_2m[closestIndex],
     precipitation: forecast.hourly.precipitation[closestIndex],
+    rain: forecast.hourly.rain[closestIndex],
+    showers: forecast.hourly.showers[closestIndex],
+    snowfall: forecast.hourly.snowfall[closestIndex],
+    weatherCode: forecast.hourly.weather_code[closestIndex],
     windSpeed: forecast.hourly.wind_speed_10m[closestIndex],
     windDirection: forecast.hourly.wind_direction_10m[closestIndex],
     cloudCover: forecast.hourly.cloud_cover[closestIndex],

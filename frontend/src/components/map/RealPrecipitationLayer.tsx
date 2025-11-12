@@ -123,20 +123,31 @@ export default function RealPrecipitationLayer() {
         const weatherData = getWeatherAtTime(point.forecast, selectedTime);
         if (!weatherData) return;
 
-        // Debug: log precipitation data
-        if (weatherData.precipitation > 0) {
+        // Calculate TOTAL precipitation from all sources
+        const totalPrecip = weatherData.precipitation + weatherData.rain + weatherData.showers;
+        const hasSnow = weatherData.snowfall > 0;
+
+        // Debug: log ALL precipitation data
+        if (totalPrecip > 0 || hasSnow) {
           precipCount++;
-          console.log(`💧 Point ${index}: ${weatherData.precipitation.toFixed(2)} mm/h at`, point.lat.toFixed(2), point.lon.toFixed(2));
+          console.log(`💧 Point ${index} at [${point.lat.toFixed(2)}, ${point.lon.toFixed(2)}]:`, {
+            total: totalPrecip.toFixed(2),
+            precip: weatherData.precipitation.toFixed(2),
+            rain: weatherData.rain.toFixed(2),
+            showers: weatherData.showers.toFixed(2),
+            snow: weatherData.snowfall.toFixed(2),
+            weatherCode: weatherData.weatherCode
+          });
         }
 
-        if (weatherData.precipitation === 0) return;
+        if (totalPrecip === 0 && !hasSnow) return;
 
         // Convert lat/lon to screen coordinates
         const latLng = { lat: point.lat, lng: point.lon };
         const screenPoint = map.latLngToContainerPoint(latLng);
 
         // Calculate precipitation intensity (0-20mm/h)
-        const precip = weatherData.precipitation;
+        const precip = totalPrecip;
         const intensity = Math.min(precip / 10, 1); // Normalize to 0-1 (adjusted for better visibility)
 
         // Draw zone with gradient based on intensity - MUCH MORE VISIBLE
@@ -175,33 +186,53 @@ export default function RealPrecipitationLayer() {
         );
       });
 
-      // Draw legend and debug info
-      const maxPrecip = Math.max(
-        ...gridDataRef.current
-          .filter(p => p.forecast)
-          .map(p => {
-            const data = getWeatherAtTime(p.forecast!, selectedTime);
-            return data ? data.precipitation : 0;
-          })
-      );
+      // Draw legend and debug info - CHECK ALL PRECIPITATION TYPES
+      const precipStats = gridDataRef.current
+        .filter(p => p.forecast)
+        .map(p => {
+          const data = getWeatherAtTime(p.forecast!, selectedTime);
+          if (!data) return { total: 0, rain: 0, showers: 0, snow: 0, precip: 0 };
+          return {
+            total: data.precipitation + data.rain + data.showers,
+            rain: data.rain,
+            showers: data.showers,
+            snow: data.snowfall,
+            precip: data.precipitation
+          };
+        });
 
-      // Always show the legend with debug info
+      const maxTotal = Math.max(...precipStats.map(s => s.total));
+      const maxRain = Math.max(...precipStats.map(s => s.rain));
+      const maxShowers = Math.max(...precipStats.map(s => s.showers));
+      const maxSnow = Math.max(...precipStats.map(s => s.snow));
+      const maxPrecip = Math.max(...precipStats.map(s => s.precip));
+
+      // Always show the legend with DETAILED debug info
       ctx.globalAlpha = 1;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(10, canvas.height - 80, 250, 70);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillRect(10, canvas.height - 140, 280, 130);
 
       ctx.fillStyle = 'white';
       ctx.font = 'bold 14px sans-serif';
 
-      if (maxPrecip > 0) {
-        ctx.fillText(`💧 Précipitations max: ${maxPrecip.toFixed(1)} mm/h`, 20, canvas.height - 55);
-        ctx.fillText(`Zones avec pluie: ${precipCount}/${gridDataRef.current.length}`, 20, canvas.height - 35);
+      if (maxTotal > 0) {
+        ctx.fillText(`💧 Précipitations TOTALES: ${maxTotal.toFixed(2)} mm/h`, 20, canvas.height - 115);
+        ctx.font = '12px sans-serif';
+        ctx.fillText(`  • Précip: ${maxPrecip.toFixed(2)} mm/h`, 20, canvas.height - 95);
+        ctx.fillText(`  • Pluie: ${maxRain.toFixed(2)} mm/h`, 20, canvas.height - 78);
+        ctx.fillText(`  • Averses: ${maxShowers.toFixed(2)} mm/h`, 20, canvas.height - 61);
+        ctx.fillText(`  • Neige: ${maxSnow.toFixed(2)} mm/h`, 20, canvas.height - 44);
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText(`Zones actives: ${precipCount}/${gridDataRef.current.length}`, 20, canvas.height - 24);
       } else {
-        ctx.fillText(`💧 Aucune précipitation détectée`, 20, canvas.height - 55);
-        ctx.fillText(`Points vérifiés: ${gridDataRef.current.length}`, 20, canvas.height - 35);
+        ctx.fillText(`💧 AUCUNE précipitation sur toute la grille`, 20, canvas.height - 115);
+        ctx.font = '12px sans-serif';
+        ctx.fillText(`Points analysés: ${gridDataRef.current.length}`, 20, canvas.height - 95);
+        ctx.fillText(`Essayez de déplacer la carte ou`, 20, canvas.height - 75);
+        ctx.fillText(`changer l'heure avec la timeline`, 20, canvas.height - 58);
       }
       ctx.font = '11px sans-serif';
-      ctx.fillText(`Timeline: ${selectedTime.toLocaleTimeString('fr-FR')}`, 20, canvas.height - 15);
+      ctx.fillText(`⏰ ${selectedTime.toLocaleTimeString('fr-FR')}`, 20, canvas.height - 15);
 
       // Draw grid points for debugging (small dots)
       ctx.globalAlpha = 0.6;
