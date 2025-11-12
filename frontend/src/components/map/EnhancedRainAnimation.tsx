@@ -6,11 +6,11 @@ import axios from 'axios';
 interface Raindrop {
   x: number;
   y: number;
-  z: number; // Profondeur pour effet 3D
+  z: number;
   speed: number;
   length: number;
   opacity: number;
-  vx: number; // Vélocité X pour effet de vent
+  vx: number;
 }
 
 interface Splash {
@@ -22,7 +22,7 @@ interface Splash {
 }
 
 interface WeatherData {
-  precipitation: number; // mm/h
+  precipitation: number;
   rainIntensity: 'none' | 'light' | 'moderate' | 'heavy';
   windSpeed: number;
   windDirection: number;
@@ -42,41 +42,82 @@ export default function EnhancedRainAnimation() {
     windSpeed: 0,
     windDirection: 0,
   });
-  const { activeLayers } = useMapStore();
+  const { activeLayers, timelinePosition, isPlaying } = useMapStore();
 
   const precipLayer = activeLayers.find(l => l.id === 'precipitation');
   const isEnabled = precipLayer?.enabled || false;
   const opacity = precipLayer?.opacity || 1;
 
-  // Récupérer les données météo
+  // Récupérer les données météo selon la timeline
   useEffect(() => {
+    if (!isEnabled) return;
+
     const fetchWeatherData = async () => {
       try {
         const center = map.getCenter();
-        const response = await axios.get(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${center.lat}&lon=${center.lng}&appid=${API_KEY}`
-        );
+        const now = new Date();
+        const selectedTime = new Date(timelinePosition);
+        const hoursDiff = Math.round((selectedTime.getTime() - now.getTime()) / (1000 * 60 * 60));
 
         let precipitation = 0;
         let rainIntensity: 'none' | 'light' | 'moderate' | 'heavy' = 'none';
+        let windSpeed = 0;
+        let windDirection = 0;
 
-        if (response.data.rain) {
-          precipitation = response.data.rain['1h'] || 0;
-          if (precipitation === 0) rainIntensity = 'none';
-          else if (precipitation < 2.5) rainIntensity = 'light';
-          else if (precipitation < 10) rainIntensity = 'moderate';
-          else rainIntensity = 'heavy';
+        // Si on est dans le présent ou passé récent, utiliser weather API
+        if (hoursDiff <= 0) {
+          const response = await axios.get(
+            `https://api.openweathermap.org/data/2.5/weather?lat=${center.lat}&lon=${center.lng}&appid=${API_KEY}`
+          );
+
+          if (response.data.rain) {
+            precipitation = response.data.rain['1h'] || 0;
+          }
+          windSpeed = response.data.wind?.speed || 0;
+          windDirection = response.data.wind?.deg || 0;
+        } else {
+          // Utiliser forecast API pour le futur
+          const response = await axios.get(
+            `https://api.openweathermap.org/data/2.5/forecast?lat=${center.lat}&lon=${center.lng}&appid=${API_KEY}`
+          );
+
+          // Trouver la prévision la plus proche de l'heure sélectionnée
+          const forecasts = response.data.list;
+          const targetTimestamp = selectedTime.getTime() / 1000;
+
+          let closestForecast = forecasts[0];
+          let minDiff = Math.abs(forecasts[0].dt - targetTimestamp);
+
+          for (const forecast of forecasts) {
+            const diff = Math.abs(forecast.dt - targetTimestamp);
+            if (diff < minDiff) {
+              minDiff = diff;
+              closestForecast = forecast;
+            }
+          }
+
+          if (closestForecast.rain) {
+            precipitation = closestForecast.rain['3h'] ? closestForecast.rain['3h'] / 3 : 0;
+          }
+          windSpeed = closestForecast.wind?.speed || 0;
+          windDirection = closestForecast.wind?.deg || 0;
         }
+
+        // Déterminer l'intensité
+        if (precipitation === 0) rainIntensity = 'none';
+        else if (precipitation < 2.5) rainIntensity = 'light';
+        else if (precipitation < 10) rainIntensity = 'moderate';
+        else rainIntensity = 'heavy';
 
         weatherDataRef.current = {
           precipitation,
           rainIntensity,
-          windSpeed: response.data.wind?.speed || 0,
-          windDirection: response.data.wind?.deg || 0,
+          windSpeed,
+          windDirection,
         };
       } catch (error) {
         console.error('Erreur récupération données météo:', error);
-        // Données de test pour démo
+        // Données de test
         weatherDataRef.current = {
           precipitation: 5,
           rainIntensity: 'moderate',
@@ -87,7 +128,9 @@ export default function EnhancedRainAnimation() {
     };
 
     fetchWeatherData();
-    const interval = setInterval(fetchWeatherData, 300000);
+
+    // Rafraîchir quand la timeline change
+    const interval = setInterval(fetchWeatherData, 5000);
     const handleMoveEnd = () => fetchWeatherData();
     map.on('moveend', handleMoveEnd);
 
@@ -95,10 +138,10 @@ export default function EnhancedRainAnimation() {
       clearInterval(interval);
       map.off('moveend', handleMoveEnd);
     };
-  }, [map]);
+  }, [map, isEnabled, timelinePosition]);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!isEnabled || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d', { alpha: true });
@@ -114,14 +157,14 @@ export default function EnhancedRainAnimation() {
     map.on('resize', resizeCanvas);
 
     const createRaindrop = (): Raindrop => {
-      const z = Math.random(); // 0-1, pour effet de profondeur
+      const z = Math.random();
       const windAngle = ((weatherDataRef.current.windDirection - 90) * Math.PI) / 180;
 
       return {
         x: Math.random() * (canvas.width + 200) - 100,
         y: -50 - Math.random() * canvas.height,
         z: z,
-        speed: (15 + Math.random() * 20) * (0.5 + z * 1.5), // Plus rapide si plus proche
+        speed: (15 + Math.random() * 20) * (0.5 + z * 1.5),
         length: (15 + Math.random() * 25) * (0.5 + z * 1.5),
         opacity: (0.4 + Math.random() * 0.6) * (0.3 + z * 0.7),
         vx: Math.cos(windAngle) * weatherDataRef.current.windSpeed * 0.5,
@@ -158,24 +201,20 @@ export default function EnhancedRainAnimation() {
     const updateRain = () => {
       const weather = weatherDataRef.current;
 
-      // Mettre à jour les gouttes
       raindropsRef.current.forEach((drop) => {
         drop.y += drop.speed;
         drop.x += drop.vx;
 
-        // Créer un splash quand la goutte touche le sol
         if (drop.y > canvas.height && Math.random() > 0.7) {
           splashesRef.current.push(createSplash(drop.x, canvas.height));
         }
 
-        // Reset si hors écran
         if (drop.y > canvas.height + 50 || drop.x < -100 || drop.x > canvas.width + 100) {
           const newDrop = createRaindrop();
           Object.assign(drop, newDrop);
         }
       });
 
-      // Mettre à jour les splashes
       splashesRef.current = splashesRef.current.filter(splash => {
         splash.age++;
         return splash.age < splash.maxAge;
@@ -188,17 +227,13 @@ export default function EnhancedRainAnimation() {
       const weather = weatherDataRef.current;
       if (weather.rainIntensity === 'none') return;
 
-      // Appliquer l'opacité globale du layer
       ctx.globalAlpha = opacity;
 
-      // Trier les gouttes par profondeur (z) pour effet 3D
       const sortedDrops = [...raindropsRef.current].sort((a, b) => a.z - b.z);
 
-      // Dessiner les gouttes
       sortedDrops.forEach((drop) => {
         const alpha = drop.opacity * opacity;
 
-        // Gradient pour effet de lumière
         const gradient = ctx.createLinearGradient(
           drop.x, drop.y,
           drop.x, drop.y + drop.length
@@ -217,7 +252,6 @@ export default function EnhancedRainAnimation() {
         ctx.stroke();
       });
 
-      // Dessiner les splashes
       splashesRef.current.forEach((splash) => {
         const progress = splash.age / splash.maxAge;
         const currentSize = splash.size * (1 + progress * 2);
@@ -230,14 +264,12 @@ export default function EnhancedRainAnimation() {
         ctx.stroke();
       });
 
-      // Overlay d'effet de pluie (brouillard léger)
       if (weather.rainIntensity !== 'light') {
         const fogAlpha = weather.rainIntensity === 'heavy' ? 0.1 : 0.05;
         ctx.fillStyle = `rgba(200, 210, 220, ${fogAlpha * opacity})`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      // Afficher les infos
       ctx.globalAlpha = 1;
       ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.fillRect(canvas.width - 210, 10, 200, 70);
@@ -273,7 +305,7 @@ export default function EnhancedRainAnimation() {
       }
       map.off('resize', resizeCanvas);
     };
-  }, [map, opacity]);
+  }, [map, opacity, isEnabled]);
 
   if (!isEnabled) return null;
 

@@ -39,28 +39,61 @@ export default function EnhancedCloudAnimation() {
     weatherType: 'Clear',
     windSpeed: 0,
   });
-  const { activeLayers } = useMapStore();
+  const { activeLayers, timelinePosition } = useMapStore();
 
   const cloudLayer = activeLayers.find(l => l.id === 'clouds');
   const isEnabled = cloudLayer?.enabled || false;
   const opacity = cloudLayer?.opacity || 1;
 
   useEffect(() => {
+    if (!isEnabled) return;
+
     const fetchCloudData = async () => {
       try {
         const center = map.getCenter();
-        const response = await axios.get(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${center.lat}&lon=${center.lng}&appid=${API_KEY}`
-        );
+        const now = new Date();
+        const selectedTime = new Date(timelinePosition);
+        const hoursDiff = Math.round((selectedTime.getTime() - now.getTime()) / (1000 * 60 * 60));
 
-        weatherDataRef.current = {
-          cloudCoverage: response.data.clouds?.all || 0,
-          weatherType: response.data.weather?.[0]?.main || 'Clear',
-          windSpeed: response.data.wind?.speed || 0,
-        };
+        if (hoursDiff <= 0) {
+          // Données actuelles
+          const response = await axios.get(
+            `https://api.openweathermap.org/data/2.5/weather?lat=${center.lat}&lon=${center.lng}&appid=${API_KEY}`
+          );
+
+          weatherDataRef.current = {
+            cloudCoverage: response.data.clouds?.all || 0,
+            weatherType: response.data.weather?.[0]?.main || 'Clear',
+            windSpeed: response.data.wind?.speed || 0,
+          };
+        } else {
+          // Prévisions
+          const response = await axios.get(
+            `https://api.openweathermap.org/data/2.5/forecast?lat=${center.lat}&lon=${center.lng}&appid=${API_KEY}`
+          );
+
+          const forecasts = response.data.list;
+          const targetTimestamp = selectedTime.getTime() / 1000;
+
+          let closestForecast = forecasts[0];
+          let minDiff = Math.abs(forecasts[0].dt - targetTimestamp);
+
+          for (const forecast of forecasts) {
+            const diff = Math.abs(forecast.dt - targetTimestamp);
+            if (diff < minDiff) {
+              minDiff = diff;
+              closestForecast = forecast;
+            }
+          }
+
+          weatherDataRef.current = {
+            cloudCoverage: closestForecast.clouds?.all || 0,
+            weatherType: closestForecast.weather?.[0]?.main || 'Clear',
+            windSpeed: closestForecast.wind?.speed || 0,
+          };
+        }
       } catch (error) {
         console.error('Erreur récupération données nuages:', error);
-        // Données de test
         weatherDataRef.current = {
           cloudCoverage: 60,
           weatherType: 'Clouds',
@@ -70,7 +103,7 @@ export default function EnhancedCloudAnimation() {
     };
 
     fetchCloudData();
-    const interval = setInterval(fetchCloudData, 300000);
+    const interval = setInterval(fetchCloudData, 5000);
     const handleMoveEnd = () => fetchCloudData();
     map.on('moveend', handleMoveEnd);
 
@@ -78,10 +111,10 @@ export default function EnhancedCloudAnimation() {
       clearInterval(interval);
       map.off('moveend', handleMoveEnd);
     };
-  }, [map]);
+  }, [map, isEnabled, timelinePosition]);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!isEnabled || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d', { alpha: true });
@@ -336,7 +369,7 @@ export default function EnhancedCloudAnimation() {
       }
       map.off('resize', resizeCanvas);
     };
-  }, [map, opacity]);
+  }, [map, opacity, isEnabled]);
 
   if (!isEnabled) return null;
 

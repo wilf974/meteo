@@ -26,36 +26,69 @@ export default function EnhancedWindAnimation() {
   const particlesRef = useRef<WindParticle[]>([]);
   const animationRef = useRef<number>();
   const windDataRef = useRef<WindData>({ speed: 0, direction: 0 });
-  const { activeLayers } = useMapStore();
+  const { activeLayers, timelinePosition } = useMapStore();
 
   const windLayer = activeLayers.find(l => l.id === 'wind');
   const isEnabled = windLayer?.enabled || false;
   const opacity = windLayer?.opacity || 1;
 
   useEffect(() => {
+    if (!isEnabled) return;
+
     const fetchWindData = async () => {
       try {
         const center = map.getCenter();
-        const response = await axios.get(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${center.lat}&lon=${center.lng}&appid=${API_KEY}`
-        );
+        const now = new Date();
+        const selectedTime = new Date(timelinePosition);
+        const hoursDiff = Math.round((selectedTime.getTime() - now.getTime()) / (1000 * 60 * 60));
 
-        if (response.data.wind) {
+        if (hoursDiff <= 0) {
+          // Données actuelles
+          const response = await axios.get(
+            `https://api.openweathermap.org/data/2.5/weather?lat=${center.lat}&lon=${center.lng}&appid=${API_KEY}`
+          );
+
+          if (response.data.wind) {
+            windDataRef.current = {
+              speed: response.data.wind.speed || 0,
+              direction: response.data.wind.deg || 0,
+              gust: response.data.wind.gust,
+            };
+          }
+        } else {
+          // Prévisions
+          const response = await axios.get(
+            `https://api.openweathermap.org/data/2.5/forecast?lat=${center.lat}&lon=${center.lng}&appid=${API_KEY}`
+          );
+
+          const forecasts = response.data.list;
+          const targetTimestamp = selectedTime.getTime() / 1000;
+
+          let closestForecast = forecasts[0];
+          let minDiff = Math.abs(forecasts[0].dt - targetTimestamp);
+
+          for (const forecast of forecasts) {
+            const diff = Math.abs(forecast.dt - targetTimestamp);
+            if (diff < minDiff) {
+              minDiff = diff;
+              closestForecast = forecast;
+            }
+          }
+
           windDataRef.current = {
-            speed: response.data.wind.speed || 0,
-            direction: response.data.wind.deg || 0,
-            gust: response.data.wind.gust,
+            speed: closestForecast.wind?.speed || 0,
+            direction: closestForecast.wind?.deg || 0,
+            gust: closestForecast.wind?.gust,
           };
         }
       } catch (error) {
         console.error('Erreur récupération données vent:', error);
-        // Données de test
         windDataRef.current = { speed: 5, direction: 90 };
       }
     };
 
     fetchWindData();
-    const interval = setInterval(fetchWindData, 300000);
+    const interval = setInterval(fetchWindData, 5000);
     const handleMoveEnd = () => fetchWindData();
     map.on('moveend', handleMoveEnd);
 
@@ -63,10 +96,10 @@ export default function EnhancedWindAnimation() {
       clearInterval(interval);
       map.off('moveend', handleMoveEnd);
     };
-  }, [map]);
+  }, [map, isEnabled, timelinePosition]);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!isEnabled || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d', { alpha: true });
@@ -312,7 +345,7 @@ export default function EnhancedWindAnimation() {
       }
       map.off('resize', resizeCanvas);
     };
-  }, [map, opacity]);
+  }, [map, opacity, isEnabled]);
 
   if (!isEnabled) return null;
 
