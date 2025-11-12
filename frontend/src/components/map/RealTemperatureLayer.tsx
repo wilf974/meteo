@@ -28,7 +28,7 @@ export default function RealTemperatureLayer() {
       try {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
-        const gridSize = zoom > 8 ? 8 : zoom > 6 ? 6 : 4;
+        const gridSize = zoom > 8 ? 12 : zoom > 6 ? 8 : 6;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -109,16 +109,17 @@ export default function RealTemperatureLayer() {
 
         const temp = weatherData.temperature;
         const color = getTemperatureColor(temp);
-        const zoneSize = 150;
+        const zoneSize = 200; // Larger zones
 
         const gradient = ctx.createRadialGradient(
           screenPoint.x, screenPoint.y, 0,
           screenPoint.x, screenPoint.y, zoneSize
         );
 
-        const alpha = opacity * 0.5;
+        // Much more visible temperature zones
+        const alpha = opacity * 0.7; // Increased from 0.5 to 0.7
         gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`);
-        gradient.addColorStop(0.6, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.5})`);
+        gradient.addColorStop(0.6, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.6})`);
         gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
 
         ctx.fillStyle = gradient;

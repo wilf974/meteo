@@ -28,7 +28,7 @@ export default function RealCloudLayer() {
       try {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
-        const gridSize = zoom > 8 ? 8 : zoom > 6 ? 6 : 4;
+        const gridSize = zoom > 8 ? 12 : zoom > 6 ? 8 : 6;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -108,17 +108,32 @@ export default function RealCloudLayer() {
         const screenPoint = map.latLngToContainerPoint(latLng);
 
         const cloudCover = weatherData.cloudCover / 100; // 0-1
-        const zoneSize = 150;
+        const zoneSize = 200; // Larger zones
 
         const gradient = ctx.createRadialGradient(
           screenPoint.x, screenPoint.y, 0,
           screenPoint.x, screenPoint.y, zoneSize
         );
 
-        const alpha = cloudCover * opacity * 0.4;
-        gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
-        gradient.addColorStop(0.6, `rgba(240, 240, 240, ${alpha * 0.5})`);
-        gradient.addColorStop(1, `rgba(220, 220, 220, 0)`);
+        // Much more visible clouds with gray tint
+        const alpha = Math.max(0.25, cloudCover * 0.8) * opacity; // Minimum 0.25, max 0.8
+
+        if (cloudCover < 0.3) {
+          // Few clouds - light gray/white
+          gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+          gradient.addColorStop(0.5, `rgba(240, 240, 245, ${alpha * 0.6})`);
+          gradient.addColorStop(1, `rgba(230, 230, 240, 0)`);
+        } else if (cloudCover < 0.7) {
+          // Moderate clouds - gray
+          gradient.addColorStop(0, `rgba(220, 220, 230, ${alpha})`);
+          gradient.addColorStop(0.5, `rgba(200, 200, 215, ${alpha * 0.6})`);
+          gradient.addColorStop(1, `rgba(180, 180, 200, 0)`);
+        } else {
+          // Heavy clouds - dark gray
+          gradient.addColorStop(0, `rgba(180, 180, 190, ${alpha})`);
+          gradient.addColorStop(0.5, `rgba(160, 160, 175, ${alpha * 0.6})`);
+          gradient.addColorStop(1, `rgba(140, 140, 160, 0)`);
+        }
 
         ctx.fillStyle = gradient;
         ctx.fillRect(

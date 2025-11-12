@@ -30,8 +30,8 @@ export default function RealPrecipitationLayer() {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
 
-        // Adjust grid density based on zoom level
-        const gridSize = zoom > 8 ? 8 : zoom > 6 ? 6 : 4;
+        // Adjust grid density based on zoom level - increased density
+        const gridSize = zoom > 8 ? 12 : zoom > 6 ? 8 : 6;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -113,12 +113,23 @@ export default function RealPrecipitationLayer() {
 
       const selectedTime = new Date(timelinePosition);
 
+      // Count precipitation zones for debugging
+      let precipCount = 0;
+
       // Draw precipitation zones using grid data
       gridDataRef.current.forEach((point, index) => {
         if (!point.forecast) return;
 
         const weatherData = getWeatherAtTime(point.forecast, selectedTime);
-        if (!weatherData || weatherData.precipitation === 0) return;
+        if (!weatherData) return;
+
+        // Debug: log precipitation data
+        if (weatherData.precipitation > 0) {
+          precipCount++;
+          console.log(`💧 Point ${index}: ${weatherData.precipitation.toFixed(2)} mm/h at`, point.lat.toFixed(2), point.lon.toFixed(2));
+        }
+
+        if (weatherData.precipitation === 0) return;
 
         // Convert lat/lon to screen coordinates
         const latLng = { lat: point.lat, lng: point.lon };
@@ -126,20 +137,34 @@ export default function RealPrecipitationLayer() {
 
         // Calculate precipitation intensity (0-20mm/h)
         const precip = weatherData.precipitation;
-        const intensity = Math.min(precip / 20, 1); // Normalize to 0-1
+        const intensity = Math.min(precip / 10, 1); // Normalize to 0-1 (adjusted for better visibility)
 
-        // Draw zone with gradient based on intensity
-        const zoneSize = 150; // Size of each precipitation zone
+        // Draw zone with gradient based on intensity - MUCH MORE VISIBLE
+        const zoneSize = 200; // Larger zones
         const gradient = ctx.createRadialGradient(
           screenPoint.x, screenPoint.y, 0,
           screenPoint.x, screenPoint.y, zoneSize
         );
 
-        // Color based on intensity: light blue to dark blue
-        const alpha = intensity * opacity * 0.6;
-        gradient.addColorStop(0, `rgba(100, 150, 255, ${alpha})`);
-        gradient.addColorStop(0.5, `rgba(80, 120, 220, ${alpha * 0.5})`);
-        gradient.addColorStop(1, `rgba(60, 90, 180, 0)`);
+        // Stronger colors based on intensity
+        const alpha = Math.max(0.3, intensity) * opacity * 0.9; // Minimum 0.3 alpha, max 0.9
+
+        if (precip < 1) {
+          // Light rain - light blue
+          gradient.addColorStop(0, `rgba(150, 200, 255, ${alpha})`);
+          gradient.addColorStop(0.5, `rgba(100, 170, 255, ${alpha * 0.6})`);
+          gradient.addColorStop(1, `rgba(80, 150, 240, 0)`);
+        } else if (precip < 5) {
+          // Moderate rain - blue
+          gradient.addColorStop(0, `rgba(80, 150, 255, ${alpha})`);
+          gradient.addColorStop(0.5, `rgba(60, 120, 230, ${alpha * 0.6})`);
+          gradient.addColorStop(1, `rgba(40, 100, 200, 0)`);
+        } else {
+          // Heavy rain - dark blue/purple
+          gradient.addColorStop(0, `rgba(60, 100, 200, ${alpha})`);
+          gradient.addColorStop(0.5, `rgba(40, 70, 170, ${alpha * 0.6})`);
+          gradient.addColorStop(1, `rgba(20, 50, 140, 0)`);
+        }
 
         ctx.fillStyle = gradient;
         ctx.fillRect(
@@ -150,7 +175,7 @@ export default function RealPrecipitationLayer() {
         );
       });
 
-      // Draw legend
+      // Draw legend and debug info
       const maxPrecip = Math.max(
         ...gridDataRef.current
           .filter(p => p.forecast)
@@ -160,16 +185,36 @@ export default function RealPrecipitationLayer() {
           })
       );
 
-      if (maxPrecip > 0) {
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(10, canvas.height - 60, 200, 50);
+      // Always show the legend with debug info
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(10, canvas.height - 80, 250, 70);
 
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.fillText(`💧 Précipitations max:`, 20, canvas.height - 35);
-        ctx.fillText(`${maxPrecip.toFixed(1)} mm/h`, 20, canvas.height - 18);
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 14px sans-serif';
+
+      if (maxPrecip > 0) {
+        ctx.fillText(`💧 Précipitations max: ${maxPrecip.toFixed(1)} mm/h`, 20, canvas.height - 55);
+        ctx.fillText(`Zones avec pluie: ${precipCount}/${gridDataRef.current.length}`, 20, canvas.height - 35);
+      } else {
+        ctx.fillText(`💧 Aucune précipitation détectée`, 20, canvas.height - 55);
+        ctx.fillText(`Points vérifiés: ${gridDataRef.current.length}`, 20, canvas.height - 35);
       }
+      ctx.font = '11px sans-serif';
+      ctx.fillText(`Timeline: ${selectedTime.toLocaleTimeString('fr-FR')}`, 20, canvas.height - 15);
+
+      // Draw grid points for debugging (small dots)
+      ctx.globalAlpha = 0.6;
+      gridDataRef.current.forEach((point) => {
+        const latLng = { lat: point.lat, lng: point.lon };
+        const screenPoint = map.latLngToContainerPoint(latLng);
+
+        // Draw a small circle at each grid point
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+        ctx.beginPath();
+        ctx.arc(screenPoint.x, screenPoint.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
     };
 
     const animate = () => {
