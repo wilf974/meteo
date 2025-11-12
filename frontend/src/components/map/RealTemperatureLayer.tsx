@@ -97,6 +97,9 @@ export default function RealTemperatureLayer() {
 
       const selectedTime = new Date(timelinePosition);
 
+      // Use 'lighten' blend mode for temperature overlays
+      ctx.globalCompositeOperation = 'lighten';
+
       // Draw temperature zones
       gridDataRef.current.forEach((point) => {
         if (!point.forecast) return;
@@ -109,19 +112,25 @@ export default function RealTemperatureLayer() {
 
         const temp = weatherData.temperature;
         const color = getTemperatureColor(temp);
-        const zoneSize = 250; // MUCH larger zones
 
-        // OPACITE MAXIMALE pour les températures
-        const alpha = opacity * 0.85; // INCREASED to 0.85!
+        // Much larger zones for smoother blending
+        const zoneSize = 350;
+
+        // More subtle opacity
+        const baseAlpha = 0.2; // Reduced from 0.85 to 0.2
+        const alpha = baseAlpha * opacity;
 
         const gradient = ctx.createRadialGradient(
           screenPoint.x, screenPoint.y, 0,
-          screenPoint.x, screenPoint.y, zoneSize * 0.8
+          screenPoint.x, screenPoint.y, zoneSize
         );
 
+        // Much smoother gradient with exponential falloff
         gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`);
-        gradient.addColorStop(0.4, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.85})`);
-        gradient.addColorStop(0.7, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.5})`);
+        gradient.addColorStop(0.3, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.7})`);
+        gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.4})`);
+        gradient.addColorStop(0.7, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.15})`);
+        gradient.addColorStop(0.85, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.05})`);
         gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
 
         ctx.fillStyle = gradient;
@@ -132,6 +141,9 @@ export default function RealTemperatureLayer() {
           zoneSize * 2
         );
       });
+
+      // Reset composite operation
+      ctx.globalCompositeOperation = 'source-over';
 
       // Show temperature range
       const temps = gridDataRef.current

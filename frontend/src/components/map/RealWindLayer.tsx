@@ -121,7 +121,7 @@ export default function RealWindLayer() {
         );
       });
 
-      // Show max wind speed
+      // Show max wind speed with compact legend
       const windSpeeds = gridDataRef.current
         .filter(p => p.forecast)
         .map(p => {
@@ -134,12 +134,14 @@ export default function RealWindLayer() {
 
         if (maxWind > 1) {
           ctx.globalAlpha = 1;
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-          ctx.fillRect(10, 70, 180, 50);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+          ctx.fillRect(10, 70, 160, 50);
 
           ctx.fillStyle = 'white';
           ctx.font = 'bold 14px sans-serif';
-          ctx.fillText(`🌬️ Vent max: ${maxWind.toFixed(1)} km/h`, 20, 95);
+          ctx.fillText(`🌬️ Vent`, 20, 90);
+          ctx.font = '12px sans-serif';
+          ctx.fillText(`Max: ${maxWind.toFixed(0)} km/h`, 20, 108);
         }
       }
     };
@@ -186,21 +188,32 @@ function drawWindArrow(
   opacity: number
 ) {
   const angleRad = ((direction - 90) * Math.PI) / 180;
-  const length = Math.min(40, 15 + speed / 2);
+  const length = Math.min(35, 12 + speed / 2.5);
 
-  // Color based on wind speed intensity
+  // Color based on wind speed intensity with more natural palette
   const speedNormalized = Math.min(speed / 50, 1); // 0-1 scale
-  const r = Math.floor(255 * speedNormalized);
-  const g = Math.floor(255 * (1 - speedNormalized * 0.5));
-  const b = Math.floor(255 * (1 - speedNormalized));
+  const r = Math.floor(200 + 55 * speedNormalized);
+  const g = Math.floor(220 - 60 * speedNormalized);
+  const b = Math.floor(255 - 100 * speedNormalized);
+
+  // Adaptive opacity based on wind speed
+  const arrowOpacity = Math.min(0.6 + speedNormalized * 0.3, 0.9) * opacity;
 
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angleRad);
 
-  ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${opacity * 0.9})`;
-  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${opacity * 0.9})`;
-  ctx.lineWidth = 2.5;
+  // Draw subtle shadow for better visibility
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+  ctx.shadowBlur = 3;
+  ctx.shadowOffsetX = 1;
+  ctx.shadowOffsetY = 1;
+
+  ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${arrowOpacity})`;
+  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${arrowOpacity})`;
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
 
   // Main line
   ctx.beginPath();
@@ -208,11 +221,11 @@ function drawWindArrow(
   ctx.lineTo(length, 0);
   ctx.stroke();
 
-  // Arrow head
+  // Arrow head (smaller and more elegant)
   ctx.beginPath();
   ctx.moveTo(length, 0);
-  ctx.lineTo(length - 10, -6);
-  ctx.lineTo(length - 10, 6);
+  ctx.lineTo(length - 8, -5);
+  ctx.lineTo(length - 8, 5);
   ctx.closePath();
   ctx.fill();
 

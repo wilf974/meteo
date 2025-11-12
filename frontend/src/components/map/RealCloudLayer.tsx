@@ -97,6 +97,9 @@ export default function RealCloudLayer() {
 
       const selectedTime = new Date(timelinePosition);
 
+      // Use multiply blend mode for realistic cloud shadows
+      ctx.globalCompositeOperation = 'multiply';
+
       // Draw cloud cover zones
       gridDataRef.current.forEach((point) => {
         if (!point.forecast) return;
@@ -108,35 +111,39 @@ export default function RealCloudLayer() {
         const screenPoint = map.latLngToContainerPoint(latLng);
 
         const cloudCover = weatherData.cloudCover / 100; // 0-1
-        const zoneSize = 250; // MUCH larger zones
 
-        // OPACITY MAXIMALE pour les nuages
-        const alpha = Math.min(0.85, Math.max(0.45, cloudCover * 0.95)) * opacity; // Min 0.45, max 0.85!
+        // Much larger zones for smoother blending
+        const zoneSize = 350;
+
+        // More subtle opacity with exponential curve
+        const baseAlpha = 0.05 + (Math.pow(cloudCover, 1.2) * 0.25); // Range 0.05-0.30
+        const alpha = baseAlpha * opacity;
 
         const gradient = ctx.createRadialGradient(
           screenPoint.x, screenPoint.y, 0,
-          screenPoint.x, screenPoint.y, zoneSize * 0.8
+          screenPoint.x, screenPoint.y, zoneSize
         );
 
+        // Determine gray level based on cloud cover
+        let grayValue;
         if (cloudCover < 0.3) {
-          // Few clouds - VERY white/bright
-          gradient.addColorStop(0, `rgba(250, 250, 255, ${alpha})`);
-          gradient.addColorStop(0.4, `rgba(235, 235, 245, ${alpha * 0.8})`);
-          gradient.addColorStop(0.7, `rgba(220, 220, 235, ${alpha * 0.5})`);
-          gradient.addColorStop(1, `rgba(200, 200, 220, 0)`);
+          // Few clouds - light gray
+          grayValue = 240;
         } else if (cloudCover < 0.7) {
-          // Moderate clouds - STRONG gray
-          gradient.addColorStop(0, `rgba(200, 200, 215, ${alpha})`);
-          gradient.addColorStop(0.4, `rgba(180, 180, 200, ${alpha * 0.8})`);
-          gradient.addColorStop(0.7, `rgba(160, 160, 185, ${alpha * 0.5})`);
-          gradient.addColorStop(1, `rgba(140, 140, 170, 0)`);
+          // Moderate clouds - medium gray
+          grayValue = 200;
         } else {
-          // Heavy clouds - VERY DARK gray - TRES FONCE
-          gradient.addColorStop(0, `rgba(140, 140, 160, ${alpha})`);
-          gradient.addColorStop(0.4, `rgba(120, 120, 145, ${alpha * 0.8})`);
-          gradient.addColorStop(0.7, `rgba(100, 100, 130, ${alpha * 0.5})`);
-          gradient.addColorStop(1, `rgba(80, 80, 110, 0)`);
+          // Heavy clouds - darker gray
+          grayValue = 160;
         }
+
+        // Create smooth gradient with exponential falloff
+        gradient.addColorStop(0, `rgba(${grayValue}, ${grayValue}, ${grayValue + 10}, ${alpha})`);
+        gradient.addColorStop(0.3, `rgba(${grayValue}, ${grayValue}, ${grayValue + 10}, ${alpha * 0.7})`);
+        gradient.addColorStop(0.5, `rgba(${grayValue}, ${grayValue}, ${grayValue + 10}, ${alpha * 0.4})`);
+        gradient.addColorStop(0.7, `rgba(${grayValue}, ${grayValue}, ${grayValue + 10}, ${alpha * 0.15})`);
+        gradient.addColorStop(0.85, `rgba(${grayValue}, ${grayValue}, ${grayValue + 10}, ${alpha * 0.05})`);
+        gradient.addColorStop(1, `rgba(${grayValue}, ${grayValue}, ${grayValue + 10}, 0)`);
 
         ctx.fillStyle = gradient;
         ctx.fillRect(
@@ -145,16 +152,10 @@ export default function RealCloudLayer() {
           zoneSize * 2,
           zoneSize * 2
         );
-
-        // Add visible border for clouds
-        if (cloudCover > 0.5) {
-          ctx.strokeStyle = `rgba(120, 120, 140, ${alpha * 0.6})`;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(screenPoint.x, screenPoint.y, zoneSize * 0.65, 0, Math.PI * 2);
-          ctx.stroke();
-        }
       });
+
+      // Reset composite operation
+      ctx.globalCompositeOperation = 'source-over';
     };
 
     const animate = () => {
