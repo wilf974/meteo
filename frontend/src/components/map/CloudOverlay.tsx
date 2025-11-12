@@ -30,10 +30,12 @@ export default function CloudOverlay() {
     const fetchData = async () => {
       try {
         const center = map.getCenter();
+        console.log('☁️ CloudOverlay: Fetching data for', center.lat, center.lng);
         const forecast = await getForecast(center.lat, center.lng);
         forecastRef.current = forecast;
+        console.log('☁️ CloudOverlay: Data loaded successfully');
       } catch (error) {
-        console.error('Erreur Open-Meteo clouds:', error);
+        console.error('☁️ CloudOverlay: Erreur Open-Meteo:', error);
       }
     };
 

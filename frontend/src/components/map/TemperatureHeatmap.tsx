@@ -23,10 +23,12 @@ export default function TemperatureHeatmap() {
       setIsLoading(true);
       try {
         const center = map.getCenter();
+        console.log('🌡️ TemperatureHeatmap: Fetching data for', center.lat, center.lng);
         const forecast = await getForecast(center.lat, center.lng);
         forecastRef.current = forecast;
+        console.log('🌡️ TemperatureHeatmap: Data loaded successfully');
       } catch (error) {
-        console.error('Erreur Open-Meteo:', error);
+        console.error('🌡️ TemperatureHeatmap: Erreur Open-Meteo:', error);
       } finally {
         setIsLoading(false);
       }
@@ -47,7 +49,7 @@ export default function TemperatureHeatmap() {
 
   // Dessiner la heatmap
   useEffect(() => {
-    if (!isEnabled || !canvasRef.current || !forecastRef.current) return;
+    if (!isEnabled || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d', { alpha: true });
@@ -65,12 +67,24 @@ export default function TemperatureHeatmap() {
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      if (!forecastRef.current) return;
+      if (!forecastRef.current) {
+        // Afficher message de chargement
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(canvas.width / 2 - 100, canvas.height / 2 - 25, 200, 50);
+        ctx.fillStyle = 'white';
+        ctx.font = '16px sans-serif';
+        ctx.fillText('Chargement météo...', canvas.width / 2 - 80, canvas.height / 2 + 5);
+        return;
+      }
 
       // Récupérer la température pour l'heure sélectionnée
       const weatherData = getWeatherAtTime(forecastRef.current, new Date(timelinePosition));
 
-      if (!weatherData) return;
+      if (!weatherData) {
+        console.warn('🌡️ No weather data for selected time');
+        return;
+      }
 
       const temp = weatherData.temperature;
 

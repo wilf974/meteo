@@ -21,10 +21,12 @@ export default function WindOverlay() {
     const fetchData = async () => {
       try {
         const center = map.getCenter();
+        console.log('🌬️ WindOverlay: Fetching data for', center.lat, center.lng);
         const forecast = await getForecast(center.lat, center.lng);
         forecastRef.current = forecast;
+        console.log('🌬️ WindOverlay: Data loaded successfully');
       } catch (error) {
-        console.error('Erreur Open-Meteo wind:', error);
+        console.error('🌬️ WindOverlay: Erreur Open-Meteo:', error);
       }
     };
 

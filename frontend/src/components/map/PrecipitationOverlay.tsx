@@ -21,10 +21,12 @@ export default function PrecipitationOverlay() {
     const fetchData = async () => {
       try {
         const center = map.getCenter();
+        console.log('💧 PrecipitationOverlay: Fetching data for', center.lat, center.lng);
         const forecast = await getForecast(center.lat, center.lng);
         forecastRef.current = forecast;
+        console.log('💧 PrecipitationOverlay: Data loaded successfully');
       } catch (error) {
-        console.error('Erreur Open-Meteo precipitation:', error);
+        console.error('💧 PrecipitationOverlay: Erreur Open-Meteo:', error);
       }
     };
 

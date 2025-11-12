@@ -30,7 +30,7 @@ export interface ForecastResponse {
 
 /**
  * Récupère les prévisions météo horaires pour une position donnée
- * Données disponibles: 16 jours de prévisions + 7 jours d'historique
+ * Données disponibles: 16 jours de prévisions
  */
 export async function getForecast(
   latitude: number,
@@ -38,29 +38,36 @@ export async function getForecast(
   startDate?: Date,
   endDate?: Date
 ): Promise<ForecastResponse> {
-  const now = new Date();
-  const start = startDate || new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7 jours avant
-  const end = endDate || new Date(now.getTime() + 16 * 24 * 60 * 60 * 1000); // 16 jours après
+  try {
+    const now = new Date();
+    const start = startDate || new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1 jour avant
+    const end = endDate || new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 jours après
 
-  const params = new URLSearchParams({
-    latitude: latitude.toString(),
-    longitude: longitude.toString(),
-    hourly: [
-      'temperature_2m',
-      'precipitation',
-      'wind_speed_10m',
-      'wind_direction_10m',
-      'cloud_cover',
-      'surface_pressure',
-      'relative_humidity_2m',
-    ].join(','),
-    start_date: start.toISOString().split('T')[0],
-    end_date: end.toISOString().split('T')[0],
-    timezone: 'auto',
-  });
+    const params = new URLSearchParams({
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      hourly: [
+        'temperature_2m',
+        'precipitation',
+        'wind_speed_10m',
+        'wind_direction_10m',
+        'cloud_cover',
+        'surface_pressure',
+        'relative_humidity_2m',
+      ].join(','),
+      timezone: 'auto',
+      forecast_days: '7',
+      past_days: '1',
+    });
 
-  const response = await axios.get<ForecastResponse>(`${BASE_URL}/forecast?${params}`);
-  return response.data;
+    console.log('🌐 Fetching Open-Meteo:', `${BASE_URL}/forecast?${params}`);
+    const response = await axios.get<ForecastResponse>(`${BASE_URL}/forecast?${params}`);
+    console.log('✅ Open-Meteo data received:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Open-Meteo fetch error:', error);
+    throw error;
+  }
 }
 
 /**
