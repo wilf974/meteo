@@ -10,6 +10,7 @@ import RealTemperatureLayer from '../components/map/RealTemperatureLayer';
 import RealPrecipitationLayer from '../components/map/RealPrecipitationLayer';
 import RealWindLayer from '../components/map/RealWindLayer';
 import RealCloudLayer from '../components/map/RealCloudLayer';
+import LocationSearch from '../components/map/LocationSearch';
 import 'leaflet/dist/leaflet.css';
 
 function MapEvents() {
@@ -64,6 +65,10 @@ export default function MapPage() {
         <RealCloudLayer />
         <RealPrecipitationLayer />
         <RealWindLayer />
+
+        {/* Location search with autocomplete */}
+        <LocationSearch />
+
         <MapEvents />
       </MapContainer>
 
