@@ -10,10 +10,19 @@ const Timeline = memo(function Timeline() {
   const { effectiveTheme } = useThemeStore();
   const [showSlider, setShowSlider] = useState(false);
   const [playSpeed, setPlaySpeed] = useState<number>(1); // 0.5x, 1x, 2x, 4x
+  const [currentTime, setCurrentTime] = useState(new Date()); // Horloge en temps réel
   const isDark = effectiveTheme === 'dark';
 
-  // Memoize date calculations
-  const now = useMemo(() => new Date(), []);
+  // Mise à jour de l'horloge en temps réel chaque seconde
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Memoize date calculations - now se met à jour avec currentTime
+  const now = currentTime;
   const minDate = useMemo(() => subHours(now, 24), [now]); // 24h dans le passé
   const maxDate = useMemo(() => addHours(now, 168), [now]); // 7 jours dans le futur
   const totalHours = useMemo(() => differenceInHours(maxDate, minDate), [maxDate, minDate]);
@@ -243,6 +252,19 @@ const Timeline = memo(function Timeline() {
           <div>
             <div style={{ fontSize: '14px', fontWeight: 'bold', color: isDark ? '#f1f5f9' : '#111827' }}>
               {format(timelinePosition, 'HH:mm', { locale: fr })}
+              {isNow && (
+                <span style={{
+                  marginLeft: '8px',
+                  fontSize: '10px',
+                  color: '#10b981',
+                  fontWeight: '600',
+                  padding: '2px 6px',
+                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                  borderRadius: '4px'
+                }}>
+                  EN DIRECT
+                </span>
+              )}
             </div>
             <div style={{ fontSize: '11px', color: isDark ? '#94a3b8' : '#6b7280' }}>
               {format(timelinePosition, 'dd MMM yyyy', { locale: fr })}
