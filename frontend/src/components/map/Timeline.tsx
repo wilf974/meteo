@@ -21,6 +21,25 @@ const Timeline = memo(function Timeline() {
     return () => clearInterval(interval);
   }, []);
 
+  // Synchronisation automatique avec le temps réel quand on est en mode "EN DIRECT"
+  useEffect(() => {
+    // Ne pas synchroniser si on est en mode lecture (isPlaying)
+    if (isPlaying) return;
+
+    // Vérifier si on est proche du temps actuel (moins de 5 minutes d'écart)
+    const timeDiff = Math.abs(currentTime.getTime() - timelinePosition.getTime());
+    const fiveMinutes = 5 * 60 * 1000;
+
+    if (timeDiff < fiveMinutes) {
+      // Mise à jour toutes les minutes pour rester synchronisé
+      const syncInterval = setInterval(() => {
+        setTimelinePosition(new Date());
+      }, 60 * 1000); // Toutes les 60 secondes
+
+      return () => clearInterval(syncInterval);
+    }
+  }, [currentTime, timelinePosition, isPlaying, setTimelinePosition]);
+
   // Memoize date calculations - now se met à jour avec currentTime
   const now = currentTime;
   const minDate = useMemo(() => subHours(now, 24), [now]); // 24h dans le passé
