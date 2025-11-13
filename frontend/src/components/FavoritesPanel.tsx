@@ -1,11 +1,11 @@
 import { memo, useState, useCallback } from 'react';
 import { useFavoritesStore } from '../store/favoritesStore';
 import { useThemeStore } from '../store/themeStore';
-import { Star, Trash2, X, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
+import { Star, Trash2, X, MapPin, ChevronDown, ChevronUp, Bell, BellOff } from 'lucide-react';
 import { useMap } from 'react-leaflet';
 
 const FavoritesPanel = memo(function FavoritesPanel() {
-  const { favorites, removeFavorite, clearFavorites } = useFavoritesStore();
+  const { favorites, removeFavorite, clearFavorites, toggleAlerts } = useFavoritesStore();
   const { effectiveTheme } = useThemeStore();
   const [isExpanded, setIsExpanded] = useState(false);
   const map = useMap();
@@ -25,6 +25,11 @@ const FavoritesPanel = memo(function FavoritesPanel() {
       clearFavorites();
     }
   }, [clearFavorites]);
+
+  const handleToggleAlerts = useCallback((e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    toggleAlerts(id);
+  }, [toggleAlerts]);
 
   if (favorites.length === 0) {
     return null;
@@ -174,6 +179,39 @@ const FavoritesPanel = memo(function FavoritesPanel() {
                       marginTop: '4px',
                     }}>
                       📍 {fav.lat.toFixed(4)}°N, {fav.lon.toFixed(4)}°E
+                    </div>
+                    {/* Toggle Alerts */}
+                    <div
+                      onClick={(e) => handleToggleAlerts(e, fav.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginTop: '10px',
+                        marginLeft: '24px',
+                        padding: '6px 10px',
+                        background: fav.alertsEnabled
+                          ? (isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.1)')
+                          : (isDark ? 'rgba(107, 114, 128, 0.15)' : 'rgba(107, 114, 128, 0.1)'),
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        border: `1px solid ${fav.alertsEnabled ? '#22c55e' : (isDark ? '#6b7280' : '#9ca3af')}`,
+                        transition: 'all 0.2s ease',
+                        width: 'fit-content',
+                      }}
+                    >
+                      {fav.alertsEnabled ? (
+                        <Bell size={14} style={{ color: '#22c55e' }} />
+                      ) : (
+                        <BellOff size={14} style={{ color: isDark ? '#6b7280' : '#9ca3af' }} />
+                      )}
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        color: fav.alertsEnabled ? '#22c55e' : (isDark ? '#94a3b8' : '#6b7280'),
+                      }}>
+                        {fav.alertsEnabled ? 'Alertes ON' : 'Alertes OFF'}
+                      </span>
                     </div>
                   </div>
                   <button
