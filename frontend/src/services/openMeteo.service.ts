@@ -15,6 +15,11 @@ export interface WeatherData {
   cloudCover: number;
   pressure: number;
   humidity: number;
+  // Premium features
+  uvIndex: number;
+  apparentTemperature: number;
+  dewPoint: number;
+  visibility: number;
 }
 
 export interface ForecastResponse {
@@ -33,6 +38,11 @@ export interface ForecastResponse {
     cloud_cover: number[];
     surface_pressure: number[];
     relative_humidity_2m: number[];
+    // Premium features
+    uv_index: number[];
+    apparent_temperature: number[];
+    dew_point_2m: number[];
+    visibility: number[];
   };
 }
 
@@ -66,9 +76,14 @@ export async function getForecast(
         'cloud_cover',
         'surface_pressure',
         'relative_humidity_2m',
+        // Premium features
+        'uv_index',
+        'apparent_temperature',
+        'dew_point_2m',
+        'visibility',
       ].join(','),
       timezone: 'auto',
-      forecast_days: '7',
+      forecast_days: '16', // Extended from 7 to 16 days
       past_days: '1',
     });
 
@@ -118,6 +133,11 @@ export function getWeatherAtTime(
     cloudCover: forecast.hourly.cloud_cover[closestIndex],
     pressure: forecast.hourly.surface_pressure[closestIndex],
     humidity: forecast.hourly.relative_humidity_2m[closestIndex],
+    // Premium features
+    uvIndex: forecast.hourly.uv_index[closestIndex] || 0,
+    apparentTemperature: forecast.hourly.apparent_temperature[closestIndex] || forecast.hourly.temperature_2m[closestIndex],
+    dewPoint: forecast.hourly.dew_point_2m[closestIndex] || 0,
+    visibility: forecast.hourly.visibility[closestIndex] || 10000,
   };
 }
 

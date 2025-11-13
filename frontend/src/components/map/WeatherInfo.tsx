@@ -4,7 +4,7 @@ import { weatherCache } from '../../services/weatherCache.service';
 import { getWeatherAtTime, type WeatherData, type ForecastResponse } from '../../services/openMeteo.service';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { useThemeStore } from '../../store/themeStore';
-import { X, Thermometer, Wind, Droplets, Gauge, Cloud, Compass, Eye, Star, TrendingUp } from 'lucide-react';
+import { X, Thermometer, Wind, Droplets, Gauge, Cloud, Compass, Eye, Star, TrendingUp, Sun, CloudRain } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Lazy load the chart component to reduce initial bundle size
@@ -42,6 +42,22 @@ function getWindDirection(degrees: number): string {
   const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
   const index = Math.round(degrees / 45) % 8;
   return directions[index];
+}
+
+function getUVDescription(uvIndex: number): string {
+  if (uvIndex <= 2) return 'Faible';
+  if (uvIndex <= 5) return 'Modéré';
+  if (uvIndex <= 7) return 'Élevé';
+  if (uvIndex <= 10) return 'Très élevé';
+  return 'Extrême';
+}
+
+function getUVColor(uvIndex: number): string {
+  if (uvIndex <= 2) return '#10b981'; // Green
+  if (uvIndex <= 5) return '#f59e0b'; // Yellow
+  if (uvIndex <= 7) return '#f97316'; // Orange
+  if (uvIndex <= 10) return '#ef4444'; // Red
+  return '#991b1b'; // Dark red
 }
 
 function getWeatherEmoji(weatherCode: number): string {
@@ -360,6 +376,116 @@ const WeatherInfo = memo(function WeatherInfo() {
                 </div>
                 <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827' }}>
                   {weatherData.cloudCover}%
+                </div>
+              </div>
+            </div>
+
+            {/* Premium Features Section */}
+            <div
+              style={{
+                marginTop: '16px',
+                paddingTop: '16px',
+                borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
+              }}
+            >
+              <div style={{
+                fontSize: '12px',
+                fontWeight: '600',
+                color: isDark ? '#94a3b8' : '#6b7280',
+                marginBottom: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <span style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: '700'
+                }}>PREMIUM</span>
+                <span>Indices Avancés</span>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '12px',
+                }}
+              >
+                {/* UV Index */}
+                <div
+                  style={{
+                    padding: '12px',
+                    backgroundColor: `rgba(${getUVColor(weatherData.uvIndex)}, 0.08)`,
+                    borderRadius: '10px',
+                    borderLeft: `3px solid ${getUVColor(weatherData.uvIndex)}`,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <Sun style={{ width: '16px', height: '16px', color: getUVColor(weatherData.uvIndex) }} />
+                    <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>UV</span>
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827' }}>
+                    {weatherData.uvIndex.toFixed(1)}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>
+                    {getUVDescription(weatherData.uvIndex)}
+                  </div>
+                </div>
+
+                {/* Apparent Temperature */}
+                <div
+                  style={{
+                    padding: '12px',
+                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                    borderRadius: '10px',
+                    borderLeft: '3px solid #ef4444',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <Thermometer style={{ width: '16px', height: '16px', color: '#ef4444' }} />
+                    <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Ressenti</span>
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827' }}>
+                    {weatherData.apparentTemperature.toFixed(1)}°C
+                  </div>
+                </div>
+
+                {/* Dew Point */}
+                <div
+                  style={{
+                    padding: '12px',
+                    backgroundColor: 'rgba(14, 165, 233, 0.08)',
+                    borderRadius: '10px',
+                    borderLeft: '3px solid #0ea5e9',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <CloudRain style={{ width: '16px', height: '16px', color: '#0ea5e9' }} />
+                    <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Rosée</span>
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827' }}>
+                    {weatherData.dewPoint.toFixed(1)}°C
+                  </div>
+                </div>
+
+                {/* Visibility */}
+                <div
+                  style={{
+                    padding: '12px',
+                    backgroundColor: 'rgba(34, 197, 94, 0.08)',
+                    borderRadius: '10px',
+                    borderLeft: '3px solid #22c55e',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <Eye style={{ width: '16px', height: '16px', color: '#22c55e' }} />
+                    <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Visibilité</span>
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827' }}>
+                    {(weatherData.visibility / 1000).toFixed(1)} km
+                  </div>
                 </div>
               </div>
             </div>
