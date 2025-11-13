@@ -1,10 +1,10 @@
 import { useEffect, useState, memo, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useWeatherInfoState } from '../../store/mapSelectors';
 import { weatherCache } from '../../services/weatherCache.service';
-import { getWeatherAtTime, type WeatherData, type ForecastResponse } from '../../services/openMeteo.service';
+import { getWeatherAtTime, getAirQualityAtTime, type WeatherData, type ForecastResponse, type AirQualityResponse } from '../../services/openMeteo.service';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { useThemeStore } from '../../store/themeStore';
-import { X, Thermometer, Wind, Droplets, Gauge, Cloud, Compass, Eye, Star, TrendingUp, Sun, CloudRain } from 'lucide-react';
+import { X, Thermometer, Wind, Droplets, Gauge, Cloud, Compass, Eye, Star, TrendingUp, Sun, CloudRain, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Lazy load the chart component to reduce initial bundle size
@@ -60,6 +60,24 @@ function getUVColor(uvIndex: number): string {
   return '#991b1b'; // Dark red
 }
 
+function getAQIDescription(aqi: number): string {
+  if (aqi <= 20) return 'Excellente';
+  if (aqi <= 40) return 'Bonne';
+  if (aqi <= 60) return 'Moyenne';
+  if (aqi <= 80) return 'Mauvaise';
+  if (aqi <= 100) return 'Très mauvaise';
+  return 'Extrêmement mauvaise';
+}
+
+function getAQIColor(aqi: number): string {
+  if (aqi <= 20) return '#10b981'; // Green
+  if (aqi <= 40) return '#84cc16'; // Lime
+  if (aqi <= 60) return '#f59e0b'; // Yellow
+  if (aqi <= 80) return '#f97316'; // Orange
+  if (aqi <= 100) return '#ef4444'; // Red
+  return '#991b1b'; // Dark red
+}
+
 function getWeatherEmoji(weatherCode: number): string {
   if (weatherCode === 0) return '☀️';
   if (weatherCode <= 3) return '⛅';
@@ -78,6 +96,7 @@ const WeatherInfo = memo(function WeatherInfo() {
   const { effectiveTheme } = useThemeStore();
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [forecast, setForecast] = useState<ForecastResponse | null>(null);
+  const [airQuality, setAirQuality] = useState<AirQualityResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showChart, setShowChart] = useState(false);
 
@@ -105,17 +124,36 @@ const WeatherInfo = memo(function WeatherInfo() {
 
     setIsLoading(true);
     try {
-      const forecastData = await weatherCache.getForecast(
-        selectedPoint.lat,
-        selectedPoint.lon
-      );
+      // Fetch weather and air quality in parallel
+      const [forecastData, airQualityData] = await Promise.all([
+        weatherCache.getForecast(selectedPoint.lat, selectedPoint.lon),
+        weatherCache.getAirQuality(selectedPoint.lat, selectedPoint.lon).catch(() => null), // Don't fail if air quality unavailable
+      ]);
+
       const data = getWeatherAtTime(forecastData, selectedTime);
+
+      // Merge air quality data if available
+      if (airQualityData) {
+        const airData = getAirQualityAtTime(airQualityData, selectedTime);
+        if (airData) {
+          data.pm10 = airData.pm10;
+          data.pm25 = airData.pm25;
+          data.no2 = airData.no2;
+          data.o3 = airData.o3;
+          data.so2 = airData.so2;
+          data.co = airData.co;
+          data.aqi = airData.aqi;
+        }
+      }
+
       setWeatherData(data);
       setForecast(forecastData);
+      setAirQuality(airQualityData);
     } catch (error) {
       console.error('Error fetching weather:', error);
       setWeatherData(null);
       setForecast(null);
+      setAirQuality(null);
     } finally {
       setIsLoading(false);
     }
@@ -506,6 +544,126 @@ const WeatherInfo = memo(function WeatherInfo() {
                 </div>
                 <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827' }}>
                   {(weatherData.precipitation + weatherData.rain + weatherData.showers).toFixed(1)} mm/h
+                </div>
+              </div>
+            )}
+
+            {/* Air Quality Section */}
+            {weatherData.aqi > 0 && (
+              <div
+                style={{
+                  marginTop: '16px',
+                  paddingTop: '16px',
+                  borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
+                }}
+              >
+                <div style={{
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: isDark ? '#94a3b8' : '#6b7280',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontWeight: '700'
+                  }}>PREMIUM</span>
+                  <span>Qualité de l'Air</span>
+                </div>
+
+                {/* AQI Score */}
+                <div
+                  style={{
+                    padding: '16px',
+                    backgroundColor: `${getAQIColor(weatherData.aqi)}15`,
+                    borderRadius: '12px',
+                    borderLeft: `4px solid ${getAQIColor(weatherData.aqi)}`,
+                    marginBottom: '12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <AlertTriangle style={{ width: '18px', height: '18px', color: getAQIColor(weatherData.aqi) }} />
+                    <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: '600' }}>Indice AQI Européen</span>
+                  </div>
+                  <div style={{ fontSize: '32px', fontWeight: 'bold', color: getAQIColor(weatherData.aqi), marginBottom: '4px' }}>
+                    {weatherData.aqi}
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#9ca3af', fontWeight: '500' }}>
+                    {getAQIDescription(weatherData.aqi)}
+                  </div>
+                </div>
+
+                {/* Pollutants Grid */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '8px',
+                  }}
+                >
+                  {/* PM2.5 */}
+                  <div
+                    style={{
+                      padding: '10px',
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>PM2.5</div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: isDark ? '#f1f5f9' : '#111827' }}>
+                      {weatherData.pm25.toFixed(1)}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#9ca3af' }}>µg/m³</div>
+                  </div>
+
+                  {/* PM10 */}
+                  <div
+                    style={{
+                      padding: '10px',
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>PM10</div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: isDark ? '#f1f5f9' : '#111827' }}>
+                      {weatherData.pm10.toFixed(1)}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#9ca3af' }}>µg/m³</div>
+                  </div>
+
+                  {/* NO2 */}
+                  <div
+                    style={{
+                      padding: '10px',
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>NO₂</div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: isDark ? '#f1f5f9' : '#111827' }}>
+                      {weatherData.no2.toFixed(1)}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#9ca3af' }}>µg/m³</div>
+                  </div>
+
+                  {/* O3 */}
+                  <div
+                    style={{
+                      padding: '10px',
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>O₃</div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: isDark ? '#f1f5f9' : '#111827' }}>
+                      {weatherData.o3.toFixed(1)}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#9ca3af' }}>µg/m³</div>
+                  </div>
                 </div>
               </div>
             )}

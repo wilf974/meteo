@@ -1,6 +1,33 @@
 import axios from 'axios';
 
 const BASE_URL = 'https://api.open-meteo.com/v1';
+const AIR_QUALITY_URL = 'https://air-quality-api.open-meteo.com/v1';
+
+export interface AirQualityData {
+  time: string;
+  pm10: number;
+  pm25: number;
+  no2: number;
+  o3: number;
+  so2: number;
+  co: number;
+  aqi: number;
+}
+
+export interface AirQualityResponse {
+  latitude: number;
+  longitude: number;
+  hourly: {
+    time: string[];
+    pm10: number[];
+    pm2_5: number[];
+    carbon_monoxide: number[];
+    nitrogen_dioxide: number[];
+    sulphur_dioxide: number[];
+    ozone: number[];
+    european_aqi: number[];
+  };
+}
 
 export interface WeatherData {
   time: string;
@@ -20,6 +47,14 @@ export interface WeatherData {
   apparentTemperature: number;
   dewPoint: number;
   visibility: number;
+  // Air Quality (Premium)
+  pm10: number;
+  pm25: number;
+  no2: number;
+  o3: number;
+  so2: number;
+  co: number;
+  aqi: number; // European Air Quality Index
 }
 
 export interface ForecastResponse {
@@ -138,6 +173,85 @@ export function getWeatherAtTime(
     apparentTemperature: forecast.hourly.apparent_temperature[closestIndex] || forecast.hourly.temperature_2m[closestIndex],
     dewPoint: forecast.hourly.dew_point_2m[closestIndex] || 0,
     visibility: forecast.hourly.visibility[closestIndex] || 10000,
+    // Air Quality - default values, will be populated by getAirQualityAtTime
+    pm10: 0,
+    pm25: 0,
+    no2: 0,
+    o3: 0,
+    so2: 0,
+    co: 0,
+    aqi: 0,
+  };
+}
+
+/**
+ * Récupère les données de qualité de l'air pour une position donnée
+ * API Open-Meteo Air Quality (gratuite)
+ */
+export async function getAirQuality(
+  latitude: number,
+  longitude: number
+): Promise<AirQualityResponse> {
+  try {
+    const params = new URLSearchParams({
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      hourly: [
+        'pm10',
+        'pm2_5',
+        'carbon_monoxide',
+        'nitrogen_dioxide',
+        'sulphur_dioxide',
+        'ozone',
+        'european_aqi',
+      ].join(','),
+      timezone: 'auto',
+      forecast_days: '7', // Air quality typically available for 7 days
+      past_days: '1',
+    });
+
+    console.log('🌫️ Fetching Air Quality:', `${AIR_QUALITY_URL}/air-quality?${params}`);
+    const response = await axios.get<AirQualityResponse>(`${AIR_QUALITY_URL}/air-quality?${params}`);
+    console.log('✅ Air Quality data received:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Air Quality fetch error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Récupère les données de qualité de l'air pour un moment spécifique
+ */
+export function getAirQualityAtTime(
+  airQuality: AirQualityResponse,
+  targetTime: Date
+): AirQualityData | null {
+  const targetTimestamp = targetTime.getTime();
+
+  // Trouver l'index de l'heure la plus proche
+  let closestIndex = 0;
+  let minDiff = Infinity;
+
+  airQuality.hourly.time.forEach((timeStr, index) => {
+    const time = new Date(timeStr).getTime();
+    const diff = Math.abs(time - targetTimestamp);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestIndex = index;
+    }
+  });
+
+  // Retourner les données pour cette heure
+  return {
+    time: airQuality.hourly.time[closestIndex],
+    pm10: airQuality.hourly.pm10[closestIndex] || 0,
+    pm25: airQuality.hourly.pm2_5[closestIndex] || 0,
+    co: airQuality.hourly.carbon_monoxide[closestIndex] || 0,
+    no2: airQuality.hourly.nitrogen_dioxide[closestIndex] || 0,
+    so2: airQuality.hourly.sulphur_dioxide[closestIndex] || 0,
+    o3: airQuality.hourly.ozone[closestIndex] || 0,
+    aqi: airQuality.hourly.european_aqi[closestIndex] || 0,
   };
 }
 

@@ -1,7 +1,13 @@
-import { getForecast, type ForecastResponse } from './openMeteo.service';
+import { getForecast, getAirQuality, type ForecastResponse, type AirQualityResponse } from './openMeteo.service';
 
 interface CacheEntry {
   forecast: ForecastResponse;
+  timestamp: number;
+  hits: number;
+}
+
+interface AirQualityCacheEntry {
+  airQuality: AirQualityResponse;
   timestamp: number;
   hits: number;
 }
@@ -16,14 +22,20 @@ interface CacheStats {
 
 class WeatherCacheService {
   private cache = new Map<string, CacheEntry>();
+  private airQualityCache = new Map<string, AirQualityCacheEntry>();
   private CACHE_DURATION = 10 * 60 * 1000; // 10 minutes (increased from 5)
   private MAX_CACHE_SIZE = 1000; // Maximum cache entries
   private pendingRequests = new Map<string, Promise<ForecastResponse>>();
+  private pendingAirQualityRequests = new Map<string, Promise<AirQualityResponse>>();
   private stats = { hits: 0, misses: 0 };
+  private airQualityStats = { hits: 0, misses: 0 };
 
   constructor() {
     // Auto-cleanup every 5 minutes
-    setInterval(() => this.cleanupExpiredCache(), 5 * 60 * 1000);
+    setInterval(() => {
+      this.cleanupExpiredCache();
+      this.cleanupExpiredAirQualityCache();
+    }, 5 * 60 * 1000);
   }
 
   private getCacheKey(lat: number, lon: number): string {
@@ -149,10 +161,73 @@ class WeatherCacheService {
     }
   }
 
+  private cleanupExpiredAirQualityCache() {
+    const now = Date.now();
+    let cleaned = 0;
+
+    for (const [key, entry] of this.airQualityCache.entries()) {
+      if (now - entry.timestamp > this.CACHE_DURATION) {
+        this.airQualityCache.delete(key);
+        cleaned++;
+      }
+    }
+
+    if (cleaned > 0) {
+      console.log(`🧹 Cleaned ${cleaned} expired air quality cache entries`);
+    }
+  }
+
+  async getAirQuality(lat: number, lon: number, prefetch: boolean = false): Promise<AirQualityResponse> {
+    const key = this.getCacheKey(lat, lon);
+    const now = Date.now();
+
+    // Check cache
+    const cached = this.airQualityCache.get(key);
+    if (cached && (now - cached.timestamp) < this.CACHE_DURATION) {
+      if (!prefetch) {
+        this.airQualityStats.hits++;
+        cached.hits++;
+        console.log(`📦 Air Quality cache hit for ${key} (${cached.hits} hits)`);
+      }
+      return cached.airQuality;
+    }
+
+    // Check if there's already a pending request for this location
+    const pending = this.pendingAirQualityRequests.get(key);
+    if (pending) {
+      if (!prefetch) {
+        console.log(`⏳ Reusing pending air quality request for ${key}`);
+      }
+      return pending;
+    }
+
+    // Make new request
+    if (!prefetch) {
+      this.airQualityStats.misses++;
+      console.log(`🌫️ Air Quality cache miss, fetching ${key}`);
+    }
+
+    const request = getAirQuality(lat, lon)
+      .then(airQuality => {
+        this.airQualityCache.set(key, { airQuality, timestamp: now, hits: 0 });
+        this.pendingAirQualityRequests.delete(key);
+        return airQuality;
+      })
+      .catch(error => {
+        this.pendingAirQualityRequests.delete(key);
+        throw error;
+      });
+
+    this.pendingAirQualityRequests.set(key, request);
+    return request;
+  }
+
   clearCache() {
     this.cache.clear();
+    this.airQualityCache.clear();
     this.stats = { hits: 0, misses: 0 };
-    console.log('🗑️ Weather cache cleared');
+    this.airQualityStats = { hits: 0, misses: 0 };
+    console.log('🗑️ Weather and air quality cache cleared');
   }
 
   getCacheStats(): CacheStats {
