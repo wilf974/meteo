@@ -86,7 +86,7 @@ Authorization: Bearer <token>
 
 ### Test de configuration
 ```bash
-curl -X POST http://localhost:3001/api/email/test \
+curl -X POST http://localhost:5001/api/email/test \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{"email": "votre-email@example.com"}'
@@ -94,7 +94,7 @@ curl -X POST http://localhost:3001/api/email/test \
 
 ### Envoyer une alerte météo
 ```bash
-curl -X POST http://localhost:3001/api/email/alert \
+curl -X POST http://localhost:5001/api/email/alert \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
