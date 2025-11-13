@@ -158,7 +158,7 @@ export default function RealWindLayer() {
           screenPoint.y,
           windDir,
           windSpeed,
-          opacity * 0.4 // More transparent for static arrows
+          opacity * 0.75 // More visible arrows
         );
       });
 
@@ -275,14 +275,14 @@ function drawWindArrow(
   const angleRad = ((direction - 90) * Math.PI) / 180;
   const length = Math.min(35, 12 + speed / 2.5);
 
-  // Color based on wind speed intensity with more natural palette
+  // Color based on wind speed intensity (darker for better visibility)
   const speedNormalized = Math.min(speed / 50, 1); // 0-1 scale
-  const r = Math.floor(200 + 55 * speedNormalized);
-  const g = Math.floor(220 - 60 * speedNormalized);
-  const b = Math.floor(255 - 100 * speedNormalized);
+  const r = Math.floor(160 + 55 * speedNormalized);
+  const g = Math.floor(180 - 60 * speedNormalized);
+  const b = Math.floor(215 - 100 * speedNormalized);
 
-  // Adaptive opacity based on wind speed
-  const arrowOpacity = Math.min(0.6 + speedNormalized * 0.3, 0.9) * opacity;
+  // Higher opacity for better visibility
+  const arrowOpacity = Math.min(0.75 + speedNormalized * 0.25, 1.0) * opacity;
 
   ctx.save();
   ctx.translate(x, y);
@@ -296,7 +296,7 @@ function drawWindArrow(
 
   ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${arrowOpacity})`;
   ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${arrowOpacity})`;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.5;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 

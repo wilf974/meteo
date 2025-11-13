@@ -162,8 +162,8 @@ export default function RealPrecipitationLayer() {
         // Much larger zones for smoother blending
         const zoneSize = 350;
 
-        // More subtle opacity curve based on intensity
-        const baseAlpha = 0.15 + (intensity * 0.4); // Range 0.15-0.55 instead of 0.6-0.95
+        // More visible opacity for better contrast
+        const baseAlpha = 0.25 + (intensity * 0.55); // Range 0.25-0.80 for better visibility
         const alpha = baseAlpha * opacity;
 
         // Create very smooth gradient with wider falloff
@@ -172,17 +172,17 @@ export default function RealPrecipitationLayer() {
           screenPoint.x, screenPoint.y, zoneSize
         );
 
-        // Determine color based on intensity
+        // Determine color based on intensity (darker colors for better visibility)
         let r, g, b;
         if (precip < 1) {
-          // Light rain - Soft blue
-          r = 120; g = 180; b = 255;
+          // Light rain - Darker soft blue
+          r = 80; g = 140; b = 220;
         } else if (precip < 5) {
-          // Moderate rain - Medium blue
-          r = 60; g = 130; b = 240;
+          // Moderate rain - Darker medium blue
+          r = 40; g = 100; b = 200;
         } else {
-          // Heavy rain - Dark blue
-          r = 30; g = 80; b = 200;
+          // Heavy rain - Very dark blue
+          r = 20; g = 60; b = 160;
         }
 
         // Much smoother gradient with exponential falloff
@@ -255,10 +255,10 @@ export default function RealPrecipitationLayer() {
           ctx.lineTo(drop.x, drop.y + drop.length);
           ctx.stroke();
         } else {
-          // Draw rain drop with streak
+          // Draw rain drop with streak (darker for better visibility)
           ctx.globalAlpha = drop.opacity * opacity;
-          ctx.strokeStyle = 'rgba(150, 200, 255, 0.8)';
-          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = 'rgba(100, 150, 220, 0.9)';
+          ctx.lineWidth = 1.5;
           ctx.lineCap = 'round';
           ctx.beginPath();
           ctx.moveTo(drop.x, drop.y);
