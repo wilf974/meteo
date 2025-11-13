@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export interface FavoriteAlerts {
+  email: {
+    enabled: boolean;
+    address: string;
+  };
+  browser: {
+    enabled: boolean;
+  };
+}
+
 export interface FavoriteLocation {
   id: string;
   name: string;
@@ -9,14 +19,14 @@ export interface FavoriteLocation {
   country: string;
   admin1?: string; // Region/State
   addedAt: number;
-  alertsEnabled: boolean; // Alertes activées pour ce lieu
+  alerts: FavoriteAlerts;
 }
 
 interface FavoritesState {
   favorites: FavoriteLocation[];
-  addFavorite: (location: Omit<FavoriteLocation, 'id' | 'addedAt' | 'alertsEnabled'>) => void;
+  addFavorite: (location: Omit<FavoriteLocation, 'id' | 'addedAt' | 'alerts'>) => void;
   removeFavorite: (id: string) => void;
-  toggleAlerts: (id: string) => void;
+  updateAlerts: (id: string, alerts: Partial<FavoriteAlerts>) => void;
   isFavorite: (lat: number, lon: number) => boolean;
   getFavoriteByCoords: (lat: number, lon: number) => FavoriteLocation | undefined;
   clearFavorites: () => void;
@@ -56,7 +66,15 @@ export const useFavoritesStore = create<FavoritesState>()(
           ...location,
           id: generateId(),
           addedAt: Date.now(),
-          alertsEnabled: false, // Désactivé par défaut
+          alerts: {
+            email: {
+              enabled: false,
+              address: '',
+            },
+            browser: {
+              enabled: false,
+            },
+          },
         };
 
         set({ favorites: [newFavorite, ...favorites] });
@@ -70,15 +88,15 @@ export const useFavoritesStore = create<FavoritesState>()(
         console.log('Removed from favorites:', id);
       },
 
-      toggleAlerts: (id) => {
+      updateAlerts: (id, alerts) => {
         set((state) => ({
           favorites: state.favorites.map(f =>
-            f.id === id ? { ...f, alertsEnabled: !f.alertsEnabled } : f
+            f.id === id ? { ...f, alerts: { ...f.alerts, ...alerts } } : f
           ),
         }));
         const favorite = get().favorites.find(f => f.id === id);
         if (favorite) {
-          console.log(`Alertes ${favorite.alertsEnabled ? 'activées' : 'désactivées'} pour:`, favorite.name);
+          console.log(`Alertes mises à jour pour:`, favorite.name, alerts);
         }
       },
 
@@ -108,15 +126,24 @@ export const useFavoritesStore = create<FavoritesState>()(
     }),
     {
       name: 'meteo-favorites-storage',
-      version: 2,
+      version: 3,
       migrate: (persistedState: any, version: number) => {
-        if (version === 1) {
-          // Migration: ajouter alertsEnabled à tous les favoris existants
+        if (version < 3) {
+          // Migration v1/v2 -> v3: convertir alertsEnabled en structure alerts complète
           return {
             ...persistedState,
             favorites: persistedState.favorites?.map((f: any) => ({
               ...f,
-              alertsEnabled: f.alertsEnabled ?? false,
+              alerts: {
+                email: {
+                  enabled: false,
+                  address: '',
+                },
+                browser: {
+                  enabled: f.alertsEnabled ?? false,
+                },
+              },
+              alertsEnabled: undefined, // Remove old field
             })) || [],
           };
         }

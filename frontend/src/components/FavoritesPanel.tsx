@@ -1,13 +1,15 @@
 import { memo, useState, useCallback } from 'react';
 import { useFavoritesStore } from '../store/favoritesStore';
 import { useThemeStore } from '../store/themeStore';
-import { Star, Trash2, X, MapPin, ChevronDown, ChevronUp, Bell, BellOff } from 'lucide-react';
+import { Star, Trash2, X, MapPin, ChevronDown, ChevronUp, Bell, BellOff, Mail, Monitor } from 'lucide-react';
 import { useMap } from 'react-leaflet';
 
 const FavoritesPanel = memo(function FavoritesPanel() {
-  const { favorites, removeFavorite, clearFavorites, toggleAlerts } = useFavoritesStore();
+  const { favorites, removeFavorite, clearFavorites, updateAlerts } = useFavoritesStore();
   const { effectiveTheme } = useThemeStore();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [expandedAlerts, setExpandedAlerts] = useState<Record<string, boolean>>({});
+  const [emailInputs, setEmailInputs] = useState<Record<string, string>>({});
   const map = useMap();
 
   const handleGoToLocation = useCallback((lat: number, lon: number) => {
@@ -26,10 +28,37 @@ const FavoritesPanel = memo(function FavoritesPanel() {
     }
   }, [clearFavorites]);
 
-  const handleToggleAlerts = useCallback((e: React.MouseEvent, id: string) => {
+  const toggleAlertsExpanded = useCallback((e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    toggleAlerts(id);
-  }, [toggleAlerts]);
+    setExpandedAlerts(prev => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  }, []);
+
+  const handleToggleEmailAlert = useCallback((e: React.MouseEvent, id: string, enabled: boolean, email: string) => {
+    e.stopPropagation();
+    updateAlerts(id, {
+      email: { enabled, address: email },
+    });
+  }, [updateAlerts]);
+
+  const handleToggleBrowserAlert = useCallback((e: React.MouseEvent, id: string, enabled: boolean) => {
+    e.stopPropagation();
+    updateAlerts(id, {
+      browser: { enabled },
+    });
+    if (enabled && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, [updateAlerts]);
+
+  const handleEmailInputChange = useCallback((id: string, value: string) => {
+    setEmailInputs(prev => ({
+      ...prev,
+      [id]: value,
+    }));
+  }, []);
 
   if (favorites.length === 0) {
     return null;
@@ -180,38 +209,187 @@ const FavoritesPanel = memo(function FavoritesPanel() {
                     }}>
                       📍 {fav.lat.toFixed(4)}°N, {fav.lon.toFixed(4)}°E
                     </div>
-                    {/* Toggle Alerts */}
-                    <div
-                      onClick={(e) => handleToggleAlerts(e, fav.id)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        marginTop: '10px',
-                        marginLeft: '24px',
-                        padding: '6px 10px',
-                        background: fav.alertsEnabled
-                          ? (isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.1)')
-                          : (isDark ? 'rgba(107, 114, 128, 0.15)' : 'rgba(107, 114, 128, 0.1)'),
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        border: `1px solid ${fav.alertsEnabled ? '#22c55e' : (isDark ? '#6b7280' : '#9ca3af')}`,
-                        transition: 'all 0.2s ease',
-                        width: 'fit-content',
-                      }}
-                    >
-                      {fav.alertsEnabled ? (
-                        <Bell size={14} style={{ color: '#22c55e' }} />
-                      ) : (
-                        <BellOff size={14} style={{ color: isDark ? '#6b7280' : '#9ca3af' }} />
+                    {/* Alerts Section */}
+                    <div style={{ marginTop: '10px', marginLeft: '24px' }}>
+                      {/* Alerts Header */}
+                      <div
+                        onClick={(e) => toggleAlertsExpanded(e, fav.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '6px 10px',
+                          background: (fav.alerts.email.enabled || fav.alerts.browser.enabled)
+                            ? (isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.1)')
+                            : (isDark ? 'rgba(107, 114, 128, 0.15)' : 'rgba(107, 114, 128, 0.1)'),
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          border: `1px solid ${(fav.alerts.email.enabled || fav.alerts.browser.enabled) ? '#22c55e' : (isDark ? '#6b7280' : '#9ca3af')}`,
+                          transition: 'all 0.2s ease',
+                          width: 'fit-content',
+                        }}
+                      >
+                        {(fav.alerts.email.enabled || fav.alerts.browser.enabled) ? (
+                          <Bell size={14} style={{ color: '#22c55e' }} />
+                        ) : (
+                          <BellOff size={14} style={{ color: isDark ? '#6b7280' : '#9ca3af' }} />
+                        )}
+                        <span style={{
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          color: (fav.alerts.email.enabled || fav.alerts.browser.enabled) ? '#22c55e' : (isDark ? '#94a3b8' : '#6b7280'),
+                        }}>
+                          {(fav.alerts.email.enabled || fav.alerts.browser.enabled) ? 'Alertes actives' : 'Configurer alertes'}
+                        </span>
+                        {expandedAlerts[fav.id] ? (
+                          <ChevronUp size={12} style={{ color: isDark ? '#94a3b8' : '#6b7280' }} />
+                        ) : (
+                          <ChevronDown size={12} style={{ color: isDark ? '#94a3b8' : '#6b7280' }} />
+                        )}
+                      </div>
+
+                      {/* Alerts Options */}
+                      {expandedAlerts[fav.id] && (
+                        <div style={{
+                          marginTop: '8px',
+                          padding: '12px',
+                          background: isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.03)',
+                          borderRadius: '8px',
+                          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'}`,
+                        }}>
+                          {/* Email Alerts */}
+                          <div style={{ marginBottom: '12px' }}>
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const currentEmail = emailInputs[fav.id] || fav.alerts.email.address;
+                                if (!fav.alerts.email.enabled && !currentEmail) {
+                                  // Don't toggle on if no email
+                                  return;
+                                }
+                                handleToggleEmailAlert(e, fav.id, !fav.alerts.email.enabled, currentEmail);
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px',
+                                background: fav.alerts.email.enabled
+                                  ? (isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)')
+                                  : (isDark ? 'rgba(107, 114, 128, 0.1)' : 'rgba(107, 114, 128, 0.05)'),
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                border: `1px solid ${fav.alerts.email.enabled ? '#3b82f6' : (isDark ? '#4b5563' : '#d1d5db')}`,
+                              }}
+                            >
+                              <Mail size={14} style={{ color: fav.alerts.email.enabled ? '#3b82f6' : (isDark ? '#9ca3af' : '#6b7280') }} />
+                              <span style={{
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                color: fav.alerts.email.enabled ? '#3b82f6' : (isDark ? '#9ca3af' : '#6b7280'),
+                              }}>
+                                Email
+                              </span>
+                              <div style={{
+                                marginLeft: 'auto',
+                                width: '36px',
+                                height: '18px',
+                                borderRadius: '9px',
+                                background: fav.alerts.email.enabled ? '#3b82f6' : (isDark ? '#4b5563' : '#d1d5db'),
+                                position: 'relative',
+                                transition: 'all 0.2s ease',
+                              }}>
+                                <div style={{
+                                  width: '14px',
+                                  height: '14px',
+                                  borderRadius: '50%',
+                                  background: 'white',
+                                  position: 'absolute',
+                                  top: '2px',
+                                  left: fav.alerts.email.enabled ? '20px' : '2px',
+                                  transition: 'all 0.2s ease',
+                                }} />
+                              </div>
+                            </div>
+                            <input
+                              type="email"
+                              placeholder="votre@email.com"
+                              value={emailInputs[fav.id] !== undefined ? emailInputs[fav.id] : fav.alerts.email.address}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                handleEmailInputChange(fav.id, e.target.value);
+                              }}
+                              onBlur={(e) => {
+                                e.stopPropagation();
+                                const email = e.target.value;
+                                if (email && fav.alerts.email.enabled) {
+                                  handleToggleEmailAlert(e as any, fav.id, true, email);
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                width: '100%',
+                                marginTop: '6px',
+                                padding: '6px 8px',
+                                fontSize: '11px',
+                                background: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.8)',
+                                border: `1px solid ${isDark ? '#4b5563' : '#d1d5db'}`,
+                                borderRadius: '4px',
+                                color: isDark ? '#f1f5f9' : '#111827',
+                                outline: 'none',
+                              }}
+                            />
+                          </div>
+
+                          {/* Browser Alerts */}
+                          <div>
+                            <div
+                              onClick={(e) => handleToggleBrowserAlert(e, fav.id, !fav.alerts.browser.enabled)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px',
+                                background: fav.alerts.browser.enabled
+                                  ? (isDark ? 'rgba(168, 85, 247, 0.15)' : 'rgba(168, 85, 247, 0.1)')
+                                  : (isDark ? 'rgba(107, 114, 128, 0.1)' : 'rgba(107, 114, 128, 0.05)'),
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                border: `1px solid ${fav.alerts.browser.enabled ? '#a855f7' : (isDark ? '#4b5563' : '#d1d5db')}`,
+                              }}
+                            >
+                              <Monitor size={14} style={{ color: fav.alerts.browser.enabled ? '#a855f7' : (isDark ? '#9ca3af' : '#6b7280') }} />
+                              <span style={{
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                color: fav.alerts.browser.enabled ? '#a855f7' : (isDark ? '#9ca3af' : '#6b7280'),
+                              }}>
+                                Navigateur
+                              </span>
+                              <div style={{
+                                marginLeft: 'auto',
+                                width: '36px',
+                                height: '18px',
+                                borderRadius: '9px',
+                                background: fav.alerts.browser.enabled ? '#a855f7' : (isDark ? '#4b5563' : '#d1d5db'),
+                                position: 'relative',
+                                transition: 'all 0.2s ease',
+                              }}>
+                                <div style={{
+                                  width: '14px',
+                                  height: '14px',
+                                  borderRadius: '50%',
+                                  background: 'white',
+                                  position: 'absolute',
+                                  top: '2px',
+                                  left: fav.alerts.browser.enabled ? '20px' : '2px',
+                                  transition: 'all 0.2s ease',
+                                }} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       )}
-                      <span style={{
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        color: fav.alertsEnabled ? '#22c55e' : (isDark ? '#94a3b8' : '#6b7280'),
-                      }}>
-                        {fav.alertsEnabled ? 'Alertes ON' : 'Alertes OFF'}
-                      </span>
                     </div>
                   </div>
                   <button
