@@ -1,8 +1,9 @@
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { useFavoritesStore } from '../store/favoritesStore';
 import { useThemeStore } from '../store/themeStore';
 import { Star, Trash2, X, MapPin, ChevronDown, ChevronUp, Bell, BellOff, Mail, Monitor } from 'lucide-react';
 import { useMap } from 'react-leaflet';
+import L from 'leaflet';
 
 const FavoritesPanel = memo(function FavoritesPanel() {
   const { favorites, removeFavorite, clearFavorites, updateAlerts } = useFavoritesStore();
@@ -11,6 +12,16 @@ const FavoritesPanel = memo(function FavoritesPanel() {
   const [expandedAlerts, setExpandedAlerts] = useState<Record<string, boolean>>({});
   const [emailInputs, setEmailInputs] = useState<Record<string, string>>({});
   const map = useMap();
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Empêcher la propagation des clics vers la carte
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (panel) {
+      L.DomEvent.disableClickPropagation(panel);
+      L.DomEvent.disableScrollPropagation(panel);
+    }
+  }, []);
 
   const handleGoToLocation = useCallback((lat: number, lon: number) => {
     map.flyTo([lat, lon], 10, { duration: 1.5 });
@@ -68,6 +79,7 @@ const FavoritesPanel = memo(function FavoritesPanel() {
 
   return (
     <div
+      ref={panelRef}
       style={{
         position: 'fixed',
         bottom: isExpanded ? '120px' : '120px',
