@@ -1,0 +1,43 @@
+╔═══════════════════════════════════════════════════════════╗
+║         🚀 MISE À JOUR RAPIDE - MÉTÉO PRO v2.0          ║
+╚═══════════════════════════════════════════════════════════╝
+
+📍 SUR VOTRE VPS (root@srv819544):
+
+cd /opt/apps/meteo
+./update-vps.sh
+
+═══════════════════════════════════════════════════════════
+
+🎯 OU COMMANDES MANUELLES:
+
+cd /opt/apps/meteo
+git pull origin claude/incomplete-description-011CV12Gzo5TTMZoeimHUiAc
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+═══════════════════════════════════════════════════════════
+
+✨ NOUVEAUTÉS v2.0:
+
+  🌧️  Animations météo (vent, pluie, neige)
+  📊 Analytics automatique
+  📧 Email quotidien à 20h à jean.maillot14@gmail.com
+
+═══════════════════════════════════════════════════════════
+
+📊 VÉRIFIER APRÈS MAJ:
+
+  https://meteoproapp.woutils.com
+  https://meteoproapp.woutils.com/api/v1/health
+  https://meteoproapp.woutils.com/api/v1/analytics/today
+
+═══════════════════════════════════════════════════════════
+
+🔍 VOIR LES LOGS:
+
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
+
+═══════════════════════════════════════════════════════════
+
+✅ C'EST PRÊT!
