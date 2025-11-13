@@ -5,13 +5,13 @@ const SOCKET_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
 class SocketService {
   private socket: Socket | null = null;
 
-  connect(token: string) {
+  connect(token?: string) {
     if (this.socket?.connected) {
       return this.socket;
     }
 
     this.socket = io(SOCKET_URL, {
-      auth: { token },
+      auth: token ? { token } : {},
       transports: ['websocket', 'polling'],
     });
 
