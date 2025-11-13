@@ -2,7 +2,10 @@ import { useEffect, useState, memo, useCallback, useMemo } from 'react';
 import { useWeatherInfoState } from '../../store/mapSelectors';
 import { weatherCache } from '../../services/weatherCache.service';
 import { getWeatherAtTime, type WeatherData } from '../../services/openMeteo.service';
-import { X, Thermometer, Wind, Droplets, Gauge, Cloud, Compass, Eye } from 'lucide-react';
+import { useFavoritesStore } from '../../store/favoritesStore';
+import { useThemeStore } from '../../store/themeStore';
+import { X, Thermometer, Wind, Droplets, Gauge, Cloud, Compass, Eye, Star } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 function getWeatherDescription(weatherCode: number): string {
   // WMO Weather interpretation codes
@@ -52,11 +55,28 @@ function getWeatherEmoji(weatherCode: number): string {
 
 const WeatherInfo = memo(function WeatherInfo() {
   const { selectedPoint, setSelectedPoint, timelinePosition } = useWeatherInfoState();
+  const { addFavorite, isFavorite, getFavoriteByCoords } = useFavoritesStore();
+  const { effectiveTheme } = useThemeStore();
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const isDark = effectiveTheme === 'dark';
+
   // Memoize selected time to avoid recreating Date object
   const selectedTime = useMemo(() => new Date(timelinePosition), [timelinePosition]);
+
+  // Check if current location is favorite
+  const isLocationFavorite = useMemo(() => {
+    if (!selectedPoint) return false;
+    return isFavorite(selectedPoint.lat, selectedPoint.lon);
+  }, [selectedPoint, isFavorite]);
+
+  // Get location name from favorites or use coordinates
+  const locationName = useMemo(() => {
+    if (!selectedPoint) return null;
+    const fav = getFavoriteByCoords(selectedPoint.lat, selectedPoint.lon);
+    return fav ? fav.name : `${selectedPoint.lat.toFixed(4)}°N, ${selectedPoint.lon.toFixed(4)}°E`;
+  }, [selectedPoint, getFavoriteByCoords]);
 
   // Memoize fetch function
   const fetchWeather = useCallback(async () => {
@@ -82,6 +102,29 @@ const WeatherInfo = memo(function WeatherInfo() {
     fetchWeather();
   }, [fetchWeather]);
 
+  // Memoize add to favorites handler
+  const handleAddToFavorites = useCallback(() => {
+    if (!selectedPoint) return;
+
+    if (isLocationFavorite) {
+      toast.error('Déjà dans les favoris', { icon: '⭐', duration: 2000 });
+      return;
+    }
+
+    addFavorite({
+      name: locationName || `Point (${selectedPoint.lat.toFixed(2)}°, ${selectedPoint.lon.toFixed(2)}°)`,
+      lat: selectedPoint.lat,
+      lon: selectedPoint.lon,
+      country: 'Inconnu', // We don't have this info from click
+      admin1: undefined,
+    });
+
+    toast.success('Ajouté aux favoris!', {
+      icon: '⭐',
+      duration: 3000,
+    });
+  }, [selectedPoint, isLocationFavorite, addFavorite, locationName]);
+
   if (!selectedPoint) return null;
 
   return (
@@ -91,11 +134,11 @@ const WeatherInfo = memo(function WeatherInfo() {
         bottom: '90px',
         left: '20px',
         zIndex: 1000,
-        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+        backgroundColor: isDark ? 'rgba(30, 30, 40, 0.98)' : 'rgba(255, 255, 255, 0.98)',
         borderRadius: '16px',
         boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
         backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(0, 0, 0, 0.08)',
+        border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
         width: '340px',
         maxWidth: 'calc(100vw - 40px)',
       }}
@@ -107,39 +150,98 @@ const WeatherInfo = memo(function WeatherInfo() {
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '16px 20px',
-          borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+          borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
         }}
       >
-        <div>
-          <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#111827', marginBottom: '4px' }}>
+        <div style={{ flex: 1 }}>
+          <h3 style={{
+            fontSize: '16px',
+            fontWeight: 'bold',
+            color: isDark ? '#f1f5f9' : '#111827',
+            marginBottom: '4px'
+          }}>
             Météo locale
           </h3>
-          <p style={{ fontSize: '12px', color: '#6b7280' }}>
-            {selectedPoint.lat.toFixed(4)}°, {selectedPoint.lon.toFixed(4)}°
+          <p style={{
+            fontSize: '12px',
+            color: isDark ? '#94a3b8' : '#6b7280'
+          }}>
+            {locationName}
           </p>
         </div>
-        <button
-          onClick={() => setSelectedPoint(null)}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#9ca3af',
-            padding: '8px',
-            borderRadius: '8px',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-            e.currentTarget.style.color = '#111827';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.color = '#9ca3af';
-          }}
-        >
-          <X style={{ width: '20px', height: '20px' }} />
-        </button>
+
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {/* Favorite button */}
+          <button
+            onClick={handleAddToFavorites}
+            disabled={isLocationFavorite}
+            title={isLocationFavorite ? 'Déjà dans les favoris' : 'Ajouter aux favoris'}
+            style={{
+              background: isLocationFavorite
+                ? (isDark ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.1)')
+                : 'none',
+              border: isLocationFavorite
+                ? '1px solid #f59e0b'
+                : `1px solid ${isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}`,
+              cursor: isLocationFavorite ? 'default' : 'pointer',
+              color: isLocationFavorite ? '#f59e0b' : (isDark ? '#cbd5e1' : '#9ca3af'),
+              padding: '8px',
+              borderRadius: '8px',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => {
+              if (!isLocationFavorite) {
+                e.currentTarget.style.backgroundColor = isDark ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.1)';
+                e.currentTarget.style.borderColor = '#f59e0b';
+                e.currentTarget.style.color = '#f59e0b';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isLocationFavorite) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)';
+                e.currentTarget.style.color = isDark ? '#cbd5e1' : '#9ca3af';
+              }
+            }}
+          >
+            <Star
+              style={{ width: '18px', height: '18px' }}
+              fill={isLocationFavorite ? '#f59e0b' : 'none'}
+            />
+          </button>
+
+          {/* Close button */}
+          <button
+            onClick={() => setSelectedPoint(null)}
+            style={{
+              background: 'none',
+              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}`,
+              cursor: 'pointer',
+              color: isDark ? '#cbd5e1' : '#9ca3af',
+              padding: '8px',
+              borderRadius: '8px',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)';
+              e.currentTarget.style.borderColor = '#ef4444';
+              e.currentTarget.style.color = '#ef4444';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)';
+              e.currentTarget.style.color = isDark ? '#cbd5e1' : '#9ca3af';
+            }}
+          >
+            <X style={{ width: '20px', height: '20px' }} />
+          </button>
+        </div>
       </div>
 
       {/* Content */}

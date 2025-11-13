@@ -1,9 +1,15 @@
 import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { useMap } from 'react-leaflet';
+import { Star } from 'lucide-react';
 import { searchLocations, formatLocationName, type GeocodingResult } from '../../services/geocoding.service';
+import { useFavoritesStore } from '../../store/favoritesStore';
+import { useThemeStore } from '../../store/themeStore';
+import toast from 'react-hot-toast';
 
 const LocationSearch = memo(function LocationSearch() {
   const map = useMap();
+  const { addFavorite, isFavorite } = useFavoritesStore();
+  const { effectiveTheme } = useThemeStore();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<GeocodingResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -12,6 +18,8 @@ const LocationSearch = memo(function LocationSearch() {
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<number>();
+
+  const isDark = effectiveTheme === 'dark';
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -113,6 +121,29 @@ const LocationSearch = memo(function LocationSearch() {
     inputRef.current?.focus();
   }, []);
 
+  // Memoize add to favorites handler
+  const handleAddToFavorites = useCallback((e: React.MouseEvent, result: GeocodingResult) => {
+    e.stopPropagation();
+
+    if (isFavorite(result.latitude, result.longitude)) {
+      toast.error('Déjà dans les favoris', { icon: '⭐', duration: 2000 });
+      return;
+    }
+
+    addFavorite({
+      name: result.name,
+      lat: result.latitude,
+      lon: result.longitude,
+      country: result.country,
+      admin1: result.admin1,
+    });
+
+    toast.success(`${result.name} ajouté aux favoris!`, {
+      icon: '⭐',
+      duration: 3000,
+    });
+  }, [addFavorite, isFavorite]);
+
   return (
     <div
       ref={searchRef}
@@ -211,8 +242,8 @@ const LocationSearch = memo(function LocationSearch() {
             left: 0,
             right: 0,
             marginTop: '8px',
-            backgroundColor: 'white',
-            border: '2px solid rgba(0, 0, 0, 0.1)',
+            backgroundColor: isDark ? 'rgba(30, 30, 40, 0.98)' : 'white',
+            border: `2px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
             borderRadius: '8px',
             boxShadow: '0 6px 12px rgba(0, 0, 0, 0.15)',
             maxHeight: '400px',
@@ -220,68 +251,120 @@ const LocationSearch = memo(function LocationSearch() {
             zIndex: 1001,
           }}
         >
-          {results.map((result, index) => (
-            <div
-              key={result.id}
-              onClick={() => handleSelectLocation(result)}
-              style={{
-                padding: '12px 16px',
-                cursor: 'pointer',
-                backgroundColor: index === selectedIndex ? '#eff6ff' : 'white',
-                borderBottom:
-                  index < results.length - 1 ? '1px solid rgba(0, 0, 0, 0.05)' : 'none',
-                transition: 'background-color 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                if (index !== selectedIndex) {
-                  e.currentTarget.style.backgroundColor = '#f9fafb';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (index !== selectedIndex) {
-                  e.currentTarget.style.backgroundColor = 'white';
-                }
-              }}
-            >
+          {results.map((result, index) => {
+            const isResultFavorite = isFavorite(result.latitude, result.longitude);
+            return (
               <div
+                key={result.id}
                 style={{
-                  fontWeight: 500,
-                  color: '#111827',
-                  marginBottom: '4px',
-                }}
-              >
-                {result.name}
-              </div>
-              <div
-                style={{
-                  fontSize: '14px',
-                  color: '#6b7280',
+                  padding: '12px 16px',
+                  cursor: 'pointer',
+                  backgroundColor: index === selectedIndex
+                    ? (isDark ? 'rgba(102, 126, 234, 0.2)' : '#eff6ff')
+                    : (isDark ? 'rgba(30, 30, 40, 0.98)' : 'white'),
+                  borderBottom: index < results.length - 1
+                    ? `1px solid ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'}`
+                    : 'none',
+                  transition: 'background-color 0.15s',
                   display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                }}
+                onMouseEnter={(e) => {
+                  if (index !== selectedIndex) {
+                    e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.05)' : '#f9fafb';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (index !== selectedIndex) {
+                    e.currentTarget.style.backgroundColor = isDark ? 'rgba(30, 30, 40, 0.98)' : 'white';
+                  }
                 }}
               >
-                <span>
-                  {result.admin1 && `${result.admin1}, `}
-                  {result.country}
-                </span>
-                {result.population && result.population > 0 && (
-                  <span style={{ fontSize: '12px', color: '#9ca3af' }}>
-                    • {result.population.toLocaleString('fr-FR')} hab.
-                  </span>
-                )}
+                <div
+                  onClick={() => handleSelectLocation(result)}
+                  style={{ flex: 1 }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 500,
+                      color: isDark ? '#f1f5f9' : '#111827',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    {result.name}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '14px',
+                      color: isDark ? '#cbd5e1' : '#6b7280',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <span>
+                      {result.admin1 && `${result.admin1}, `}
+                      {result.country}
+                    </span>
+                    {result.population && result.population > 0 && (
+                      <span style={{ fontSize: '12px', color: isDark ? '#94a3b8' : '#9ca3af' }}>
+                        • {result.population.toLocaleString('fr-FR')} hab.
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      color: isDark ? '#64748b' : '#9ca3af',
+                      marginTop: '4px',
+                    }}
+                  >
+                    📍 {result.latitude.toFixed(4)}°N, {result.longitude.toFixed(4)}°E
+                  </div>
+                </div>
+
+                {/* Favorite button */}
+                <button
+                  onClick={(e) => handleAddToFavorites(e, result)}
+                  disabled={isResultFavorite}
+                  title={isResultFavorite ? 'Déjà dans les favoris' : 'Ajouter aux favoris'}
+                  style={{
+                    padding: '8px',
+                    background: isResultFavorite
+                      ? (isDark ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.1)')
+                      : 'transparent',
+                    border: `1px solid ${isResultFavorite ? '#f59e0b' : (isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)')}`,
+                    borderRadius: '8px',
+                    cursor: isResultFavorite ? 'default' : 'pointer',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isResultFavorite) {
+                      e.currentTarget.style.background = isDark ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.1)';
+                      e.currentTarget.style.borderColor = '#f59e0b';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isResultFavorite) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)';
+                    }
+                  }}
+                >
+                  <Star
+                    size={18}
+                    fill={isResultFavorite ? '#f59e0b' : 'none'}
+                    color={isResultFavorite ? '#f59e0b' : (isDark ? '#cbd5e1' : '#6b7280')}
+                  />
+                </button>
               </div>
-              <div
-                style={{
-                  fontSize: '12px',
-                  color: '#9ca3af',
-                  marginTop: '4px',
-                }}
-              >
-                📍 {result.latitude.toFixed(4)}°N, {result.longitude.toFixed(4)}°E
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
