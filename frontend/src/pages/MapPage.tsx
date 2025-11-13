@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense, memo } from 'react';
 import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
 import { useMapStore } from '../store/mapStore';
+import { useSetCenter, useSetZoom, useSetSelectedPoint } from '../store/mapSelectors';
 import { useAuthStore } from '../store/authStore';
 import { socketService } from '../lib/socket';
 import LayerControl from '../components/map/LayerControl';
@@ -10,12 +11,16 @@ import RealTemperatureLayer from '../components/map/RealTemperatureLayer';
 import RealPrecipitationLayer from '../components/map/RealPrecipitationLayer';
 import RealWindLayer from '../components/map/RealWindLayer';
 import RealCloudLayer from '../components/map/RealCloudLayer';
-import LocationSearch from '../components/map/LocationSearch';
-import MapLegend from '../components/map/MapLegend';
 import 'leaflet/dist/leaflet.css';
 
-function MapEvents() {
-  const { setCenter, setZoom, setSelectedPoint } = useMapStore();
+// Lazy load non-critical components for better initial load performance
+const LocationSearch = lazy(() => import('../components/map/LocationSearch'));
+const MapLegend = lazy(() => import('../components/map/MapLegend'));
+
+const MapEvents = memo(function MapEvents() {
+  const setCenter = useSetCenter();
+  const setZoom = useSetZoom();
+  const setSelectedPoint = useSetSelectedPoint();
 
   useMapEvents({
     moveend: (e) => {
@@ -31,7 +36,7 @@ function MapEvents() {
   });
 
   return null;
-}
+});
 
 export default function MapPage() {
   const { center, zoom, activeLayers } = useMapStore();
@@ -67,8 +72,10 @@ export default function MapPage() {
         <RealPrecipitationLayer />
         <RealWindLayer />
 
-        {/* Location search with autocomplete */}
-        <LocationSearch />
+        {/* Location search with autocomplete - Lazy loaded */}
+        <Suspense fallback={<div />}>
+          <LocationSearch />
+        </Suspense>
 
         <MapEvents />
       </MapContainer>
@@ -76,7 +83,11 @@ export default function MapPage() {
       <LayerControl />
       <WeatherInfo />
       <Timeline />
-      <MapLegend />
+
+      {/* Map legend - Lazy loaded */}
+      <Suspense fallback={<div />}>
+        <MapLegend />
+      </Suspense>
     </div>
   );
 }

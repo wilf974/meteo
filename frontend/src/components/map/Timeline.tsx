@@ -1,19 +1,20 @@
-import { useState, useEffect, memo } from 'react';
-import { useMapStore } from '../../store/mapStore';
+import { useState, useEffect, memo, useCallback, useMemo } from 'react';
+import { useTimelineControls } from '../../store/mapSelectors';
 import { Play, Pause, SkipBack, SkipForward, Clock, Moon, Sun } from 'lucide-react';
 import { format, addHours, subHours, differenceInHours } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const Timeline = memo(function Timeline() {
-  const { timelinePosition, setTimelinePosition, isPlaying, setIsPlaying } = useMapStore();
+  const { timelinePosition, setTimelinePosition, isPlaying, setIsPlaying } = useTimelineControls();
   const [showSlider, setShowSlider] = useState(false);
 
-  const now = new Date();
-  const minDate = subHours(now, 24); // 24h dans le passé
-  const maxDate = addHours(now, 168); // 7 jours dans le futur
-  const totalHours = differenceInHours(maxDate, minDate);
-  const currentHours = differenceInHours(timelinePosition, minDate);
-  const sliderValue = (currentHours / totalHours) * 100;
+  // Memoize date calculations
+  const now = useMemo(() => new Date(), []);
+  const minDate = useMemo(() => subHours(now, 24), [now]); // 24h dans le passé
+  const maxDate = useMemo(() => addHours(now, 168), [now]); // 7 jours dans le futur
+  const totalHours = useMemo(() => differenceInHours(maxDate, minDate), [maxDate, minDate]);
+  const currentHours = useMemo(() => differenceInHours(timelinePosition, minDate), [timelinePosition, minDate]);
+  const sliderValue = useMemo(() => (currentHours / totalHours) * 100, [currentHours, totalHours]);
 
   // Animation automatique
   useEffect(() => {
@@ -29,40 +30,39 @@ const Timeline = memo(function Timeline() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPlaying, timelinePosition, setTimelinePosition, setIsPlaying]);
+  }, [isPlaying, timelinePosition, maxDate, setTimelinePosition, setIsPlaying]);
 
-  const handlePlayPause = () => {
+  // Memoize handlers
+  const handlePlayPause = useCallback(() => {
     setIsPlaying(!isPlaying);
-  };
+  }, [isPlaying, setIsPlaying]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     const newTime = subHours(timelinePosition, 3);
     setTimelinePosition(newTime >= minDate ? newTime : minDate);
-  };
+  }, [timelinePosition, minDate, setTimelinePosition]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     const newTime = addHours(timelinePosition, 3);
     setTimelinePosition(newTime <= maxDate ? newTime : maxDate);
-  };
+  }, [timelinePosition, maxDate, setTimelinePosition]);
 
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     const hours = Math.round((value / 100) * totalHours);
     const newTime = addHours(minDate, hours);
     setTimelinePosition(newTime);
-  };
+  }, [totalHours, minDate, setTimelinePosition]);
 
-  const handleNow = () => {
+  const handleNow = useCallback(() => {
     setTimelinePosition(now);
     setIsPlaying(false);
-  };
+  }, [now, setTimelinePosition, setIsPlaying]);
 
-  // Determine if day or night
-  const hour = timelinePosition.getHours();
-  const isDaytime = hour >= 6 && hour < 20;
-
-  // Check if current time
-  const isNow = Math.abs(differenceInHours(timelinePosition, now)) < 1;
+  // Memoize derived values
+  const hour = useMemo(() => timelinePosition.getHours(), [timelinePosition]);
+  const isDaytime = useMemo(() => hour >= 6 && hour < 20, [hour]);
+  const isNow = useMemo(() => Math.abs(differenceInHours(timelinePosition, now)) < 1, [timelinePosition, now]);
 
   return (
     <div

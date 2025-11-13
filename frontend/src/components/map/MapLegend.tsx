@@ -1,5 +1,5 @@
-import { useMapStore } from '../../store/mapStore';
-import { useEffect, useState, memo } from 'react';
+import { useMapLegendState } from '../../store/mapSelectors';
+import { useEffect, useState, memo, useCallback, useMemo } from 'react';
 import { getWeatherAtTime } from '../../services/openMeteo.service';
 import { weatherCache } from '../../services/weatherCache.service';
 
@@ -11,63 +11,72 @@ interface LayerStats {
 }
 
 const MapLegend = memo(function MapLegend() {
-  const { activeLayers, center, timelinePosition } = useMapStore();
+  const { activeLayers, center, timelinePosition } = useMapLegendState();
   const [stats, setStats] = useState<LayerStats>({});
   const [isMinimized, setIsMinimized] = useState(false);
 
-  const enabledLayers = activeLayers.filter(l => l.enabled);
+  // Memoize enabled layers to avoid recalculation
+  const enabledLayers = useMemo(() => activeLayers.filter(l => l.enabled), [activeLayers]);
+
+  // Memoize selected time
+  const selectedTime = useMemo(() => new Date(timelinePosition), [timelinePosition]);
+
+  // Memoize toggle function
+  const toggleMinimized = useCallback(() => {
+    setIsMinimized(prev => !prev);
+  }, []);
+
+  // Memoize fetch stats function
+  const fetchStats = useCallback(async () => {
+    if (enabledLayers.length === 0) return;
+
+    try {
+      const forecast = await weatherCache.getForecast(center[0], center[1]);
+      const weatherData = getWeatherAtTime(forecast, selectedTime);
+
+      if (!weatherData) return;
+
+      const newStats: LayerStats = {};
+
+      // Temperature stats
+      if (enabledLayers.find(l => l.id === 'temperature')) {
+        newStats.temperature = {
+          min: Math.round(weatherData.temperature - 2),
+          max: Math.round(weatherData.temperature + 2),
+        };
+      }
+
+      // Precipitation stats
+      if (enabledLayers.find(l => l.id === 'precipitation')) {
+        const totalPrecip = weatherData.precipitation + weatherData.rain + weatherData.showers;
+        if (totalPrecip > 0) {
+          newStats.precipitation = { max: Number(totalPrecip.toFixed(1)) };
+        }
+      }
+
+      // Wind stats
+      if (enabledLayers.find(l => l.id === 'wind')) {
+        if (weatherData.windSpeed > 1) {
+          newStats.wind = { max: Math.round(weatherData.windSpeed) };
+        }
+      }
+
+      // Cloud stats
+      if (enabledLayers.find(l => l.id === 'clouds')) {
+        if (weatherData.cloudCover > 10) {
+          newStats.clouds = { coverage: Math.round(weatherData.cloudCover) };
+        }
+      }
+
+      setStats(newStats);
+    } catch (error) {
+      console.error('Error fetching legend stats:', error);
+    }
+  }, [center, selectedTime, enabledLayers]);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const forecast = await weatherCache.getForecast(center[0], center[1]);
-        const selectedTime = new Date(timelinePosition);
-        const weatherData = getWeatherAtTime(forecast, selectedTime);
-
-        if (!weatherData) return;
-
-        const newStats: LayerStats = {};
-
-        // Temperature stats
-        if (enabledLayers.find(l => l.id === 'temperature')) {
-          newStats.temperature = {
-            min: Math.round(weatherData.temperature - 2),
-            max: Math.round(weatherData.temperature + 2),
-          };
-        }
-
-        // Precipitation stats
-        if (enabledLayers.find(l => l.id === 'precipitation')) {
-          const totalPrecip = weatherData.precipitation + weatherData.rain + weatherData.showers;
-          if (totalPrecip > 0) {
-            newStats.precipitation = { max: Number(totalPrecip.toFixed(1)) };
-          }
-        }
-
-        // Wind stats
-        if (enabledLayers.find(l => l.id === 'wind')) {
-          if (weatherData.windSpeed > 1) {
-            newStats.wind = { max: Math.round(weatherData.windSpeed) };
-          }
-        }
-
-        // Cloud stats
-        if (enabledLayers.find(l => l.id === 'clouds')) {
-          if (weatherData.cloudCover > 10) {
-            newStats.clouds = { coverage: Math.round(weatherData.cloudCover) };
-          }
-        }
-
-        setStats(newStats);
-      } catch (error) {
-        console.error('Error fetching legend stats:', error);
-      }
-    };
-
-    if (enabledLayers.length > 0) {
-      fetchStats();
-    }
-  }, [center, timelinePosition, enabledLayers]);
+    fetchStats();
+  }, [fetchStats]);
 
   if (enabledLayers.length === 0) return null;
 
@@ -98,7 +107,7 @@ const MapLegend = memo(function MapLegend() {
           marginBottom: isMinimized ? 0 : '12px',
           cursor: 'pointer',
         }}
-        onClick={() => setIsMinimized(!isMinimized)}
+        onClick={toggleMinimized}
       >
         <div
           style={{

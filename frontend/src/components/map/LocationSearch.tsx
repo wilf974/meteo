@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo } from 'react';
+import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { useMap } from 'react-leaflet';
 import { searchLocations, formatLocationName, type GeocodingResult } from '../../services/geocoding.service';
 
@@ -62,7 +62,8 @@ const LocationSearch = memo(function LocationSearch() {
     };
   }, [query]);
 
-  const handleSelectLocation = (result: GeocodingResult) => {
+  // Memoize select location handler
+  const handleSelectLocation = useCallback((result: GeocodingResult) => {
     // Fly to location
     map.flyTo([result.latitude, result.longitude], 10, {
       duration: 1.5,
@@ -75,9 +76,10 @@ const LocationSearch = memo(function LocationSearch() {
 
     // Blur input
     inputRef.current?.blur();
-  };
+  }, [map]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  // Memoize keyboard handler
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (!isOpen || results.length === 0) return;
 
     switch (e.key) {
@@ -101,7 +103,15 @@ const LocationSearch = memo(function LocationSearch() {
         inputRef.current?.blur();
         break;
     }
-  };
+  }, [isOpen, results.length, selectedIndex, handleSelectLocation]);
+
+  // Memoize clear handler
+  const handleClearQuery = useCallback(() => {
+    setQuery('');
+    setResults([]);
+    setIsOpen(false);
+    inputRef.current?.focus();
+  }, []);
 
   return (
     <div
@@ -170,12 +180,7 @@ const LocationSearch = memo(function LocationSearch() {
         {/* Loading spinner or clear button */}
         {query && (
           <button
-            onClick={() => {
-              setQuery('');
-              setResults([]);
-              setIsOpen(false);
-              inputRef.current?.focus();
-            }}
+            onClick={handleClearQuery}
             style={{
               position: 'absolute',
               right: '12px',

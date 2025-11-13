@@ -1,5 +1,5 @@
-import { useEffect, useState, memo } from 'react';
-import { useMapStore } from '../../store/mapStore';
+import { useEffect, useState, memo, useCallback, useMemo } from 'react';
+import { useWeatherInfoState } from '../../store/mapSelectors';
 import { weatherCache } from '../../services/weatherCache.service';
 import { getWeatherAtTime, type WeatherData } from '../../services/openMeteo.service';
 import { X, Thermometer, Wind, Droplets, Gauge, Cloud, Compass, Eye } from 'lucide-react';
@@ -51,33 +51,36 @@ function getWeatherEmoji(weatherCode: number): string {
 }
 
 const WeatherInfo = memo(function WeatherInfo() {
-  const { selectedPoint, setSelectedPoint, timelinePosition } = useMapStore();
+  const { selectedPoint, setSelectedPoint, timelinePosition } = useWeatherInfoState();
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
+  // Memoize selected time to avoid recreating Date object
+  const selectedTime = useMemo(() => new Date(timelinePosition), [timelinePosition]);
+
+  // Memoize fetch function
+  const fetchWeather = useCallback(async () => {
     if (!selectedPoint) return;
 
-    const fetchWeather = async () => {
-      setIsLoading(true);
-      try {
-        const forecast = await weatherCache.getForecast(
-          selectedPoint.lat,
-          selectedPoint.lon
-        );
-        const selectedTime = new Date(timelinePosition);
-        const data = getWeatherAtTime(forecast, selectedTime);
-        setWeatherData(data);
-      } catch (error) {
-        console.error('Error fetching weather:', error);
-        setWeatherData(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    setIsLoading(true);
+    try {
+      const forecast = await weatherCache.getForecast(
+        selectedPoint.lat,
+        selectedPoint.lon
+      );
+      const data = getWeatherAtTime(forecast, selectedTime);
+      setWeatherData(data);
+    } catch (error) {
+      console.error('Error fetching weather:', error);
+      setWeatherData(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedPoint, selectedTime]);
 
+  useEffect(() => {
     fetchWeather();
-  }, [selectedPoint, timelinePosition]);
+  }, [fetchWeather]);
 
   if (!selectedPoint) return null;
 

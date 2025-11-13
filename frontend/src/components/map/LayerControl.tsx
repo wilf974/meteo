@@ -1,5 +1,5 @@
-import { useState, useEffect, memo } from 'react';
-import { useMapStore } from '../../store/mapStore';
+import { useState, useEffect, memo, useCallback } from 'react';
+import { useLayerControlState } from '../../store/mapSelectors';
 import { Layers, ChevronDown, ChevronUp, X, Thermometer, Cloud, Wind, Droplets } from 'lucide-react';
 
 const LAYER_ICONS: { [key: string]: { icon: React.ElementType; color: string; bgColor: string } } = {
@@ -12,7 +12,12 @@ const LAYER_ICONS: { [key: string]: { icon: React.ElementType; color: string; bg
 const LayerControl = memo(function LayerControl() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const { activeLayers, toggleLayer, setLayerOpacity } = useMapStore();
+  const { activeLayers, toggleLayer, setLayerOpacity } = useLayerControlState();
+
+  // Memoize handlers
+  const handleToggleOpen = useCallback(() => setIsOpen(prev => !prev), []);
+  const handleOpen = useCallback(() => setIsOpen(true), []);
+  const handleClose = useCallback(() => setIsOpen(false), []);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -30,7 +35,7 @@ const LayerControl = memo(function LayerControl() {
   if (isMobile && !isOpen) {
     return (
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={handleOpen}
         style={{
           position: 'absolute',
           top: '20px',
