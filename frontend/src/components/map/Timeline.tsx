@@ -102,9 +102,10 @@ const Timeline = memo(function Timeline() {
   }, [playSpeed]);
 
   // Memoize derived values
-  const hour = useMemo(() => timelinePosition.getHours(), [timelinePosition]);
-  const isDaytime = useMemo(() => hour >= 6 && hour < 20, [hour]);
   const isNow = useMemo(() => Math.abs(differenceInHours(timelinePosition, now)) < 1, [timelinePosition, now]);
+  const displayTime = isNow ? currentTime : timelinePosition;
+  const hour = useMemo(() => displayTime.getHours(), [displayTime]);
+  const isDaytime = useMemo(() => hour >= 6 && hour < 20, [hour]);
 
   return (
     <div
@@ -270,7 +271,7 @@ const Timeline = memo(function Timeline() {
 
           <div>
             <div style={{ fontSize: '14px', fontWeight: 'bold', color: isDark ? '#f1f5f9' : '#111827' }}>
-              {format(timelinePosition, 'HH:mm', { locale: fr })}
+              {format(displayTime, 'HH:mm', { locale: fr })}
               {isNow && (
                 <span style={{
                   marginLeft: '8px',
@@ -286,7 +287,7 @@ const Timeline = memo(function Timeline() {
               )}
             </div>
             <div style={{ fontSize: '11px', color: isDark ? '#94a3b8' : '#6b7280' }}>
-              {format(timelinePosition, 'dd MMM yyyy', { locale: fr })}
+              {format(displayTime, 'dd MMM yyyy', { locale: fr })}
             </div>
           </div>
         </div>
