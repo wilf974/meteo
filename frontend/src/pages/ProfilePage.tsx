@@ -1,6 +1,5 @@
-import { Settings, Palette, Info, Github, Heart } from 'lucide-react';
+import { Settings, Info, Heart } from 'lucide-react';
 import { useThemeStore } from '../store/themeStore';
-import ThemeToggle from '../components/ThemeToggle';
 
 export default function ProfilePage() {
   const { effectiveTheme } = useThemeStore();
@@ -23,37 +22,6 @@ export default function ProfilePage() {
         </div>
 
         <div className="space-y-6">
-          {/* Theme Settings */}
-          <div className="rounded-lg p-6 border" style={{
-            backgroundColor: isDark ? '#1e293b' : '#ffffff',
-            borderColor: isDark ? '#334155' : '#e2e8f0',
-            transition: 'all 0.3s ease'
-          }}>
-            <div className="flex items-center gap-2 mb-4">
-              <Palette className="w-5 h-5" style={{ color: '#667eea' }} />
-              <h2 className="text-xl font-semibold" style={{
-                color: isDark ? '#f1f5f9' : '#1e293b'
-              }}>
-                Apparence
-              </h2>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm mb-3" style={{
-                  color: isDark ? '#94a3b8' : '#64748b'
-                }}>
-                  Thème de l'application
-                </label>
-                <ThemeToggle />
-                <p className="text-sm mt-2" style={{
-                  color: isDark ? '#64748b' : '#94a3b8'
-                }}>
-                  Choisissez entre le mode clair, sombre, ou laissez l'application s'adapter automatiquement
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* App Info */}
           <div className="rounded-lg p-6 border" style={{
             backgroundColor: isDark ? '#1e293b' : '#ffffff',

@@ -7,7 +7,6 @@ import { socketService } from '../lib/socket';
 import LayerControl from '../components/map/LayerControl';
 import WeatherInfo from '../components/map/WeatherInfo';
 import Timeline from '../components/map/Timeline';
-import ThemeToggle from '../components/ThemeToggle';
 import RealTemperatureLayer from '../components/map/RealTemperatureLayer';
 import RealPrecipitationLayer from '../components/map/RealPrecipitationLayer';
 import RealWindLayer from '../components/map/RealWindLayer';
@@ -93,7 +92,6 @@ export default function MapPage() {
         <MapEvents />
       </MapContainer>
 
-      <ThemeToggle />
       <LayerControl />
       <WeatherInfo />
       <Timeline />
