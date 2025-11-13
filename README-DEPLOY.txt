@@ -20,16 +20,26 @@
   3. 88c3048 - Scripts et guides déploiement
 
 ═══════════════════════════════════════════════════════════════
-🚀 DÉPLOIEMENT EN 3 COMMANDES
+🚀 DÉPLOIEMENT EN 2 COMMANDES
 ═══════════════════════════════════════════════════════════════
 
 Sur votre VPS (root@srv819544):
 
 cd /opt/apps/meteo
-git pull origin claude/incomplete-description-011CV12Gzo5TTMZoeimHUiAc
 ./update-vps.sh
 
 ⏱️ Temps estimé: 5-10 minutes
+
+Le script fait:
+  1. git pull
+  2. docker-compose down
+  3. docker-compose up -d --build
+
+Ou manuellement:
+cd /opt/apps/meteo
+git pull origin claude/incomplete-description-011CV12Gzo5TTMZoeimHUiAc
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 ═══════════════════════════════════════════════════════════════
 📝 VÉRIFICATIONS POST-DÉPLOIEMENT

@@ -5,21 +5,27 @@
 ### 🔴 Sur votre VPS (root@srv819544)
 
 ```bash
-# 1. Aller dans le répertoire
+# Aller dans le répertoire
 cd /opt/apps/meteo
 
-# 2. Pull les dernières modifications
-git pull origin claude/incomplete-description-011CV12Gzo5TTMZoeimHUiAc
-
-# 3. Exécuter le script de mise à jour
+# Exécuter le script de mise à jour (fait tout automatiquement)
 ./update-vps.sh
 ```
 
 **C'est tout!** Le script fait automatiquement:
-- ✅ Backup BDD + Analytics
-- ✅ Rebuild Docker
-- ✅ Redémarrage services
-- ✅ Vérification santé
+- ✅ Git pull
+- ✅ Docker compose down
+- ✅ Docker compose up -d --build
+- ✅ Affiche le statut
+
+### Ou manuellement:
+
+```bash
+cd /opt/apps/meteo
+git pull origin claude/incomplete-description-011CV12Gzo5TTMZoeimHUiAc
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
 
 ---
 
