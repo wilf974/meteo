@@ -56,12 +56,22 @@ export class EmailController {
    */
   async sendAlert(req: Request, res: Response): Promise<void> {
     try {
-      const { email, location, alertType, message, temperature, precipitation, windSpeed } = req.body;
+      const { to, alertData } = req.body;
 
-      if (!email || !location || !alertType || !message) {
+      if (!to || !alertData) {
         res.status(400).json({
           success: false,
-          message: 'Email, location, alertType, and message are required',
+          message: 'To and alertData are required',
+        });
+        return;
+      }
+
+      const { location, alertType, message } = alertData;
+
+      if (!location || !alertType || !message) {
+        res.status(400).json({
+          success: false,
+          message: 'alertData must contain location, alertType, and message',
         });
         return;
       }
@@ -74,14 +84,7 @@ export class EmailController {
         return;
       }
 
-      const sent = await emailService.sendWeatherAlert(email, {
-        location,
-        alertType,
-        message,
-        temperature,
-        precipitation,
-        windSpeed,
-      });
+      const sent = await emailService.sendWeatherAlert(to, alertData);
 
       if (sent) {
         res.status(200).json({

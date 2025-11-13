@@ -4,8 +4,13 @@ import MapPage from './pages/MapPage';
 import AlertsPage from './pages/AlertsPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
+import { useWeatherAlerts } from './hooks/useWeatherAlerts';
 
 function App() {
+  // Active le monitoring automatique des alertes météo
+  // Vérifie toutes les 30 minutes les conditions météo des favoris
+  useWeatherAlerts(true, 30);
+
   return (
     <Routes>
       <Route element={<Layout />}>
