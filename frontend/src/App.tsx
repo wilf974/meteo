@@ -5,8 +5,12 @@ import AlertsPage from './pages/AlertsPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import { useWeatherAlerts } from './hooks/useWeatherAlerts';
+import { useAnalytics } from './hooks/useAnalytics';
 
 function App() {
+  // Track user connection for analytics
+  useAnalytics();
+
   // Active le monitoring automatique des alertes météo
   // Vérifie toutes les 30 minutes les conditions météo des favoris
   useWeatherAlerts(true, 30);

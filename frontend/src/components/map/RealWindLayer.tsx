@@ -10,11 +10,22 @@ interface GridPoint {
   forecast: ForecastResponse | null;
 }
 
+interface WindParticle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  size: number;
+}
+
 export default function RealWindLayer() {
   const map = useMap();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const gridDataRef = useRef<GridPoint[]>([]);
+  const particlesRef = useRef<WindParticle[]>([]);
   const { activeLayers, timelinePosition } = useMapStore();
 
   const windLayer = activeLayers.find(l => l.id === 'wind');
@@ -107,7 +118,7 @@ export default function RealWindLayer() {
 
       const selectedTime = new Date(timelinePosition);
 
-      // Draw wind arrows at each grid point
+      // Create new particles at grid points
       gridDataRef.current.forEach((point) => {
         if (!point.forecast) return;
 
@@ -117,19 +128,97 @@ export default function RealWindLayer() {
         const latLng = { lat: point.lat, lng: point.lon };
         const screenPoint = map.latLngToContainerPoint(latLng);
 
+        // Only create particles within canvas bounds
+        if (screenPoint.x < 0 || screenPoint.x > canvas.width || screenPoint.y < 0 || screenPoint.y > canvas.height) return;
+
         const windSpeed = weatherData.windSpeed; // km/h
         const windDir = weatherData.windDirection; // degrees
 
-        // Draw arrow
+        // Spawn probability based on wind speed (stronger wind = more particles)
+        const spawnChance = Math.min(windSpeed / 100, 0.3);
+        if (Math.random() < spawnChance) {
+          const angleRad = ((windDir - 90) * Math.PI) / 180;
+          const speedFactor = windSpeed / 10;
+
+          particlesRef.current.push({
+            x: screenPoint.x + (Math.random() - 0.5) * 60,
+            y: screenPoint.y + (Math.random() - 0.5) * 60,
+            vx: Math.cos(angleRad) * speedFactor,
+            vy: Math.sin(angleRad) * speedFactor,
+            life: 1,
+            maxLife: 60 + Math.random() * 40,
+            size: 1 + Math.random() * 1.5,
+          });
+        }
+
+        // Draw static arrow for reference
         drawWindArrow(
           ctx,
           screenPoint.x,
           screenPoint.y,
           windDir,
           windSpeed,
-          opacity
+          opacity * 0.4 // More transparent for static arrows
         );
       });
+
+      // Update and draw particles
+      ctx.save();
+      particlesRef.current = particlesRef.current.filter((particle) => {
+        // Update particle
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        particle.life += 1;
+
+        // Remove if out of bounds or lifetime exceeded
+        if (
+          particle.x < -50 ||
+          particle.x > canvas.width + 50 ||
+          particle.y < -50 ||
+          particle.y > canvas.height + 50 ||
+          particle.life > particle.maxLife
+        ) {
+          return false;
+        }
+
+        // Draw particle with trail effect
+        const lifeFactor = 1 - particle.life / particle.maxLife;
+        const alpha = lifeFactor * opacity;
+
+        // Speed-based color
+        const speed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+        const speedNormalized = Math.min(speed / 5, 1);
+        const r = Math.floor(200 + 55 * speedNormalized);
+        const g = Math.floor(220 - 60 * speedNormalized);
+        const b = Math.floor(255 - 100 * speedNormalized);
+
+        // Draw elongated particle (streak effect)
+        ctx.globalAlpha = alpha;
+        const gradient = ctx.createLinearGradient(
+          particle.x - particle.vx * 2,
+          particle.y - particle.vy * 2,
+          particle.x,
+          particle.y
+        );
+        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`);
+        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 1)`);
+
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = particle.size;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(particle.x - particle.vx * 3, particle.y - particle.vy * 3);
+        ctx.lineTo(particle.x, particle.y);
+        ctx.stroke();
+
+        return true;
+      });
+      ctx.restore();
+
+      // Limit total particles for performance
+      if (particlesRef.current.length > 500) {
+        particlesRef.current = particlesRef.current.slice(-500);
+      }
     };
 
     // Throttled animation: 15fps instead of 60fps for better performance

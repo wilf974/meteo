@@ -13,6 +13,7 @@ import { logger } from './utils/logger';
 import routes from './routes';
 import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
+import { initializeSchedulers } from './schedulers/daily-report.scheduler';
 
 dotenv.config();
 
@@ -98,6 +99,10 @@ const startServer = async () => {
     // Connexion à Redis
     await redisClient.connect();
     logger.info('✅ Redis connecté');
+
+    // Initialize schedulers for daily reports
+    initializeSchedulers();
+    logger.info('✅ Schedulers initialized');
 
     // Démarrage du serveur
     httpServer.listen(PORT, () => {

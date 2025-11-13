@@ -10,11 +10,21 @@ interface GridPoint {
   forecast: ForecastResponse | null;
 }
 
+interface RainDrop {
+  x: number;
+  y: number;
+  vy: number;
+  length: number;
+  opacity: number;
+  isSnow: boolean;
+}
+
 export default function RealPrecipitationLayer() {
   const map = useMap();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const gridDataRef = useRef<GridPoint[]>([]);
+  const rainDropsRef = useRef<RainDrop[]>([]);
   const { activeLayers, timelinePosition } = useMapStore();
 
   const precipLayer = activeLayers.find(l => l.id === 'precipitation');
@@ -190,10 +200,80 @@ export default function RealPrecipitationLayer() {
           zoneSize * 2,
           zoneSize * 2
         );
+
+        // Spawn rain/snow drops based on intensity
+        const dropSpawnChance = Math.min(intensity * 0.4, 0.3);
+        if (Math.random() < dropSpawnChance) {
+          const dropX = screenPoint.x + (Math.random() - 0.5) * zoneSize * 1.5;
+          const dropY = screenPoint.y + (Math.random() - 0.5) * zoneSize * 1.5;
+
+          // Only spawn drops within canvas
+          if (dropX >= 0 && dropX <= canvas.width && dropY >= -50 && dropY <= canvas.height / 2) {
+            rainDropsRef.current.push({
+              x: dropX,
+              y: dropY,
+              vy: hasSnow ? 1 + Math.random() * 1.5 : 4 + Math.random() * 3,
+              length: hasSnow ? 3 : 8 + Math.random() * 6,
+              opacity: 0.4 + Math.random() * 0.4,
+              isSnow: hasSnow,
+            });
+          }
+        }
       });
 
       // Reset composite operation for UI elements
       ctx.globalCompositeOperation = 'source-over';
+
+      // Draw and update rain/snow drops
+      ctx.save();
+      rainDropsRef.current = rainDropsRef.current.filter((drop) => {
+        // Update position
+        drop.y += drop.vy;
+        drop.opacity -= 0.008;
+
+        // Remove if out of bounds
+        if (drop.y > canvas.height + 10 || drop.opacity <= 0) {
+          return false;
+        }
+
+        // Draw rain drop or snowflake
+        if (drop.isSnow) {
+          // Draw snowflake
+          ctx.globalAlpha = drop.opacity * opacity;
+          ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+          ctx.beginPath();
+          ctx.arc(drop.x, drop.y, drop.length / 2, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Add sparkle effect
+          ctx.strokeStyle = 'rgba(200, 230, 255, 0.6)';
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(drop.x - drop.length, drop.y);
+          ctx.lineTo(drop.x + drop.length, drop.y);
+          ctx.moveTo(drop.x, drop.y - drop.length);
+          ctx.lineTo(drop.x, drop.y + drop.length);
+          ctx.stroke();
+        } else {
+          // Draw rain drop with streak
+          ctx.globalAlpha = drop.opacity * opacity;
+          ctx.strokeStyle = 'rgba(150, 200, 255, 0.8)';
+          ctx.lineWidth = 1.2;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(drop.x, drop.y);
+          ctx.lineTo(drop.x, drop.y + drop.length);
+          ctx.stroke();
+        }
+
+        return true;
+      });
+      ctx.restore();
+
+      // Limit total drops for performance
+      if (rainDropsRef.current.length > 400) {
+        rainDropsRef.current = rainDropsRef.current.slice(-400);
+      }
     };
 
     // Throttled animation: 15fps instead of 60fps for better performance
