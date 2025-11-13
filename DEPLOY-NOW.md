@@ -23,8 +23,8 @@ cd /opt/apps/meteo
 ```bash
 cd /opt/apps/meteo
 git pull origin claude/incomplete-description-011CV12Gzo5TTMZoeimHUiAc
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker-compose down
+docker-compose up -d --build
 ```
 
 ---
@@ -68,7 +68,7 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 ### 1. Services en cours
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml ps
+docker-compose ps
 ```
 
 Tous doivent être "Up (healthy)".
@@ -140,17 +140,17 @@ SMTP_FROM_NAME=Météo Pro
 
 ### Logs en temps réel
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
+docker-compose logs -f
 ```
 
 ### Logs backend uniquement
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f backend
+docker-compose logs -f backend
 ```
 
 ### Chercher les emails dans les logs
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs backend | grep -i "daily report\|scheduler"
+docker-compose logs backend | grep -i "daily report\|scheduler"
 ```
 
 ### Ressources utilisées
@@ -167,24 +167,24 @@ docker stats
 cd /opt/apps/meteo
 git log --oneline -5  # Voir les derniers commits
 git checkout <commit-précédent>
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker-compose down
+docker-compose up -d --build
 ```
 
 ### Redémarrer un service
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml restart backend
+docker-compose restart backend
 ```
 
 ### Voir les erreurs
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs backend | grep -i error
+docker-compose logs backend | grep -i error
 ```
 
 ### Reconstruire complètement
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml down -v
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker-compose down -v
+docker-compose up -d --build
 ```
 
 ---

@@ -38,15 +38,15 @@ Le script fait:
 Ou manuellement:
 cd /opt/apps/meteo
 git pull origin claude/incomplete-description-011CV12Gzo5TTMZoeimHUiAc
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker-compose down
+docker-compose up -d --build
 
 ═══════════════════════════════════════════════════════════════
 📝 VÉRIFICATIONS POST-DÉPLOIEMENT
 ═══════════════════════════════════════════════════════════════
 
 1. Services Docker:
-   docker-compose -f docker-compose.yml -f docker-compose.prod.yml ps
+   docker-compose ps
    → Tous doivent être "Up (healthy)"
 
 2. Backend Health:
@@ -110,13 +110,13 @@ Premier email: Ce soir à 20:00!
 ═══════════════════════════════════════════════════════════════
 
 Logs en temps réel:
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
+docker-compose logs -f
 
 Logs backend uniquement:
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f backend
+docker-compose logs -f backend
 
 Chercher "scheduler" dans les logs:
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs backend | grep scheduler
+docker-compose logs backend | grep scheduler
 
 Ressources:
 docker stats
@@ -145,17 +145,17 @@ docker stats
 ═══════════════════════════════════════════════════════════════
 
 Redémarrer backend:
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml restart backend
+docker-compose restart backend
 
 Voir les erreurs:
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs backend | grep -i error
+docker-compose logs backend | grep -i error
 
 Rollback:
 cd /opt/apps/meteo
 git log --oneline -5
 git checkout <commit-précédent>
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker-compose down
+docker-compose up -d --build
 
 Support:
 Consulter VPS-UPDATE-GUIDE.md section "Résolution de Problèmes"

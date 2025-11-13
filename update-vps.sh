@@ -24,20 +24,20 @@ echo ""
 
 # 2. Docker compose down
 echo -e "${YELLOW}▶ Arrêt des services...${NC}"
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+docker-compose down
 echo -e "${GREEN}✓ Services arrêtés${NC}"
 echo ""
 
 # 3. Docker compose up -d --build
 echo -e "${YELLOW}▶ Rebuild et démarrage...${NC}"
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker-compose up -d --build
 echo -e "${GREEN}✓ Services redémarrés${NC}"
 echo ""
 
 # 4. Afficher le statut
 echo -e "${YELLOW}▶ Statut des services:${NC}"
 echo ""
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml ps
+docker-compose ps
 echo ""
 
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -45,5 +45,5 @@ echo -e "${GREEN}  🎉 Mise à jour terminée!${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "${YELLOW}📱 Application: https://meteoproapp.woutils.com${NC}"
-echo -e "${YELLOW}🔧 Logs: docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f${NC}"
+echo -e "${YELLOW}🔧 Logs: docker-compose logs -f${NC}"
 echo ""

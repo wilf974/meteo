@@ -13,8 +13,8 @@ cd /opt/apps/meteo
 
 cd /opt/apps/meteo
 git pull origin claude/incomplete-description-011CV12Gzo5TTMZoeimHUiAc
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker-compose down
+docker-compose up -d --build
 
 ═══════════════════════════════════════════════════════════
 
@@ -36,7 +36,7 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 🔍 VOIR LES LOGS:
 
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
+docker-compose logs -f
 
 ═══════════════════════════════════════════════════════════
 

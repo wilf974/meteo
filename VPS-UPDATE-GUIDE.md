@@ -32,12 +32,12 @@ docker cp meteo-backend:/app/data/analytics.json analytics_backup_$(date +%Y%m%d
 git pull origin claude/incomplete-description-011CV12Gzo5TTMZoeimHUiAc
 
 # 3. Rebuild et redémarrage
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
 
 # 4. Vérifier
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml ps
+docker-compose ps
 curl https://meteoproapp.woutils.com/api/v1/health
 ```
 
@@ -67,7 +67,7 @@ curl https://meteoproapp.woutils.com/api/v1/health
 ### 1. Services Docker
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml ps
+docker-compose ps
 ```
 
 Tous les services doivent être "Up (healthy)":
@@ -103,7 +103,7 @@ Devrait retourner les stats du jour.
 ### 4. Scheduler Emails
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs backend | grep "Schedulers initialized"
+docker-compose logs backend | grep "Schedulers initialized"
 ```
 
 Devrait afficher: "✅ Schedulers initialized"
@@ -139,7 +139,7 @@ curl -X POST https://meteoproapp.woutils.com/api/v1/analytics/report \
 ### Voir les Logs du Scheduler
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs backend | grep "Daily report"
+docker-compose logs backend | grep "Daily report"
 ```
 
 ## 🚨 Résolution de Problèmes
@@ -148,23 +148,23 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs backend | g
 
 ```bash
 # Voir les logs détaillés
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs backend
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs frontend
+docker-compose logs backend
+docker-compose logs frontend
 
 # Redémarrer un service spécifique
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml restart backend
+docker-compose restart backend
 ```
 
 ### Erreur de base de données
 
 ```bash
 # Vérifier la connexion
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec backend sh
+docker-compose exec backend sh
 nc -zv postgres 5432
 
 # Recréer la base (⚠️ perte de données)
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml down -v postgres_data_prod
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker-compose down -v postgres_data_prod
+docker-compose up -d
 ```
 
 ### Analytics ne fonctionne pas
@@ -174,17 +174,17 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 docker volume inspect meteo_analytics_data
 
 # Vérifier les permissions
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec backend ls -la /app/data
+docker-compose exec backend ls -la /app/data
 
 # Recréer le fichier si nécessaire
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec backend sh -c "echo '{}' > /app/data/analytics.json"
+docker-compose exec backend sh -c "echo '{}' > /app/data/analytics.json"
 ```
 
 ### Emails non envoyés
 
 ```bash
 # Vérifier la config SMTP
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec backend env | grep SMTP
+docker-compose exec backend env | grep SMTP
 
 # Tester l'envoi
 curl -X POST http://localhost:5001/api/v1/email/test \
@@ -192,7 +192,7 @@ curl -X POST http://localhost:5001/api/v1/email/test \
   -d '{"to":"jean.maillot14@gmail.com"}'
 
 # Voir les logs SMTP
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs backend | grep -i "email\|smtp"
+docker-compose logs backend | grep -i "email\|smtp"
 ```
 
 ## 🔄 Rollback (Retour Arrière)
@@ -205,11 +205,11 @@ git log --oneline  # Trouver le commit précédent
 git checkout <commit-hash-précédent>
 
 # 2. Rebuild
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker-compose down
+docker-compose up -d --build
 
 # 3. Restaurer les données si nécessaire
-cat backup_20251113.sql | docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres psql -U postgres meteo_pro
+cat backup_20251113.sql | docker-compose exec -T postgres psql -U postgres meteo_pro
 ```
 
 ## 📦 Backups Automatiques
@@ -251,7 +251,7 @@ En production, seuls 80 et 443 devraient être accessibles depuis l'extérieur.
 ### Vérifier les logs pour erreurs
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs | grep -i "error\|fail\|critical"
+docker-compose logs | grep -i "error\|fail\|critical"
 ```
 
 ## 📈 Monitoring Post-Mise à Jour
@@ -272,7 +272,7 @@ docker system df
 ### Logs en temps réel
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f --tail=100
+docker-compose logs -f --tail=100
 ```
 
 ## 🎯 Checklist de Mise à Jour
