@@ -61,6 +61,12 @@ const FavoritesMarkers = memo(function FavoritesMarkers() {
           key={favorite.id}
           position={[favorite.lat, favorite.lon]}
           icon={createCustomIcon(isDark)}
+          eventHandlers={{
+            click: (e) => {
+              // Empêcher la propagation du clic vers la carte
+              L.DomEvent.stopPropagation(e.originalEvent);
+            },
+          }}
         >
           <Popup>
             <div style={{
