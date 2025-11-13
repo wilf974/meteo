@@ -43,7 +43,7 @@ const Timeline = memo(function Timeline() {
   // Memoize date calculations - now se met à jour avec currentTime
   const now = currentTime;
   const minDate = useMemo(() => subHours(now, 24), [now]); // 24h dans le passé
-  const maxDate = useMemo(() => addHours(now, 168), [now]); // 7 jours dans le futur
+  const maxDate = useMemo(() => addHours(now, 384), [now]); // 16 jours dans le futur (extended)
   const totalHours = useMemo(() => differenceInHours(maxDate, minDate), [maxDate, minDate]);
   const currentHours = useMemo(() => differenceInHours(timelinePosition, minDate), [timelinePosition, minDate]);
   const sliderValue = useMemo(() => (currentHours / totalHours) * 100, [currentHours, totalHours]);

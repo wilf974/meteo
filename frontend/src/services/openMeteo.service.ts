@@ -59,7 +59,7 @@ export async function getForecast(
   try {
     const now = new Date();
     const start = startDate || new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1 jour avant
-    const end = endDate || new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 jours après
+    const end = endDate || new Date(now.getTime() + 16 * 24 * 60 * 60 * 1000); // 16 jours après (extended)
 
     const params = new URLSearchParams({
       latitude: latitude.toString(),
