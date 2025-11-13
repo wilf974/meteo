@@ -2,18 +2,22 @@ import { useMapLegendState } from '../../store/mapSelectors';
 import { useEffect, useState, memo, useCallback, useMemo } from 'react';
 import { getWeatherAtTime } from '../../services/openMeteo.service';
 import { weatherCache } from '../../services/weatherCache.service';
+import { useThemeStore } from '../../store/themeStore';
 
 interface LayerStats {
   temperature?: { min: number; max: number };
   precipitation?: { max: number };
   wind?: { max: number };
   clouds?: { coverage: number };
+  pressure?: { value: number };
 }
 
 const MapLegend = memo(function MapLegend() {
   const { activeLayers, center, timelinePosition } = useMapLegendState();
+  const { effectiveTheme } = useThemeStore();
   const [stats, setStats] = useState<LayerStats>({});
   const [isMinimized, setIsMinimized] = useState(false);
+  const isDark = effectiveTheme === 'dark';
 
   // Memoize enabled layers to avoid recalculation
   const enabledLayers = useMemo(() => activeLayers.filter(l => l.enabled), [activeLayers]);
@@ -68,6 +72,11 @@ const MapLegend = memo(function MapLegend() {
         }
       }
 
+      // Pressure stats
+      if (enabledLayers.find(l => l.id === 'pressure')) {
+        newStats.pressure = { value: Math.round(weatherData.pressure) };
+      }
+
       setStats(newStats);
     } catch (error) {
       console.error('Error fetching legend stats:', error);
@@ -86,12 +95,12 @@ const MapLegend = memo(function MapLegend() {
         position: 'absolute',
         bottom: '20px',
         right: '20px',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        backgroundColor: isDark ? 'rgba(30, 30, 40, 0.95)' : 'rgba(255, 255, 255, 0.95)',
         borderRadius: '12px',
         padding: isMinimized ? '12px' : '16px',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
         backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(0, 0, 0, 0.1)',
+        border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
         zIndex: 600,
         minWidth: isMinimized ? 'auto' : '220px',
         maxWidth: '280px',
@@ -113,7 +122,7 @@ const MapLegend = memo(function MapLegend() {
           style={{
             fontSize: '14px',
             fontWeight: 'bold',
-            color: '#1f2937',
+            color: isDark ? '#f1f5f9' : '#1f2937',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
@@ -128,7 +137,7 @@ const MapLegend = memo(function MapLegend() {
             border: 'none',
             cursor: 'pointer',
             fontSize: '16px',
-            color: '#6b7280',
+            color: isDark ? '#94a3b8' : '#6b7280',
             padding: '4px',
             lineHeight: 1,
           }}
@@ -155,7 +164,7 @@ const MapLegend = memo(function MapLegend() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '18px' }}>🌡️</span>
-                <span style={{ fontSize: '13px', fontWeight: '500', color: '#374151' }}>
+                <span style={{ fontSize: '13px', fontWeight: '500', color: isDark ? '#cbd5e1' : '#374151' }}>
                   Température
                 </span>
               </div>
@@ -180,7 +189,7 @@ const MapLegend = memo(function MapLegend() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '18px' }}>💧</span>
-                <span style={{ fontSize: '13px', fontWeight: '500', color: '#374151' }}>
+                <span style={{ fontSize: '13px', fontWeight: '500', color: isDark ? '#cbd5e1' : '#374151' }}>
                   Précipitations
                 </span>
               </div>
@@ -205,7 +214,7 @@ const MapLegend = memo(function MapLegend() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '18px' }}>🌬️</span>
-                <span style={{ fontSize: '13px', fontWeight: '500', color: '#374151' }}>
+                <span style={{ fontSize: '13px', fontWeight: '500', color: isDark ? '#cbd5e1' : '#374151' }}>
                   Vent
                 </span>
               </div>
@@ -230,7 +239,7 @@ const MapLegend = memo(function MapLegend() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '18px' }}>☁️</span>
-                <span style={{ fontSize: '13px', fontWeight: '500', color: '#374151' }}>
+                <span style={{ fontSize: '13px', fontWeight: '500', color: isDark ? '#cbd5e1' : '#374151' }}>
                   Nuages
                 </span>
               </div>
@@ -240,14 +249,39 @@ const MapLegend = memo(function MapLegend() {
             </div>
           )}
 
+          {/* Pressure */}
+          {stats.pressure && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '8px',
+                backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                borderRadius: '8px',
+                borderLeft: '3px solid #a855f7',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px' }}>📊</span>
+                <span style={{ fontSize: '13px', fontWeight: '500', color: isDark ? '#cbd5e1' : '#374151' }}>
+                  Pression
+                </span>
+              </div>
+              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#a855f7' }}>
+                {stats.pressure.value} hPa
+              </span>
+            </div>
+          )}
+
           {/* Footer */}
           <div
             style={{
               marginTop: '4px',
               paddingTop: '8px',
-              borderTop: '1px solid rgba(0, 0, 0, 0.1)',
+              borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
               fontSize: '11px',
-              color: '#9ca3af',
+              color: isDark ? '#64748b' : '#9ca3af',
               textAlign: 'center',
             }}
           >

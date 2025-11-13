@@ -1,11 +1,14 @@
-import { useEffect, useState, memo, useCallback, useMemo } from 'react';
+import { useEffect, useState, memo, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useWeatherInfoState } from '../../store/mapSelectors';
 import { weatherCache } from '../../services/weatherCache.service';
-import { getWeatherAtTime, type WeatherData } from '../../services/openMeteo.service';
+import { getWeatherAtTime, type WeatherData, type ForecastResponse } from '../../services/openMeteo.service';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { useThemeStore } from '../../store/themeStore';
-import { X, Thermometer, Wind, Droplets, Gauge, Cloud, Compass, Eye, Star } from 'lucide-react';
+import { X, Thermometer, Wind, Droplets, Gauge, Cloud, Compass, Eye, Star, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+// Lazy load the chart component to reduce initial bundle size
+const WeatherChart = lazy(() => import('./WeatherChart'));
 
 function getWeatherDescription(weatherCode: number): string {
   // WMO Weather interpretation codes
@@ -58,7 +61,9 @@ const WeatherInfo = memo(function WeatherInfo() {
   const { addFavorite, isFavorite, getFavoriteByCoords } = useFavoritesStore();
   const { effectiveTheme } = useThemeStore();
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [forecast, setForecast] = useState<ForecastResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showChart, setShowChart] = useState(false);
 
   const isDark = effectiveTheme === 'dark';
 
@@ -84,15 +89,17 @@ const WeatherInfo = memo(function WeatherInfo() {
 
     setIsLoading(true);
     try {
-      const forecast = await weatherCache.getForecast(
+      const forecastData = await weatherCache.getForecast(
         selectedPoint.lat,
         selectedPoint.lon
       );
-      const data = getWeatherAtTime(forecast, selectedTime);
+      const data = getWeatherAtTime(forecastData, selectedTime);
       setWeatherData(data);
+      setForecast(forecastData);
     } catch (error) {
       console.error('Error fetching weather:', error);
       setWeatherData(null);
+      setForecast(null);
     } finally {
       setIsLoading(false);
     }
@@ -375,6 +382,63 @@ const WeatherInfo = memo(function WeatherInfo() {
                   {(weatherData.precipitation + weatherData.rain + weatherData.showers).toFixed(1)} mm/h
                 </div>
               </div>
+            )}
+
+            {/* Toggle Chart Button */}
+            <button
+              onClick={() => setShowChart(!showChart)}
+              style={{
+                width: '100%',
+                marginTop: '16px',
+                padding: '12px',
+                backgroundColor: isDark ? 'rgba(102, 126, 234, 0.15)' : 'rgba(102, 126, 234, 0.1)',
+                border: `1px solid ${isDark ? 'rgba(102, 126, 234, 0.3)' : 'rgba(102, 126, 234, 0.2)'}`,
+                borderRadius: '10px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.2s',
+                color: '#667eea',
+                fontWeight: '600',
+                fontSize: '14px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = isDark ? 'rgba(102, 126, 234, 0.25)' : 'rgba(102, 126, 234, 0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = isDark ? 'rgba(102, 126, 234, 0.15)' : 'rgba(102, 126, 234, 0.1)';
+              }}
+            >
+              <TrendingUp style={{ width: '18px', height: '18px' }} />
+              {showChart ? 'Masquer les graphiques' : 'Voir prévisions 24h'}
+            </button>
+
+            {/* Weather Chart */}
+            {showChart && forecast && (
+              <Suspense fallback={
+                <div style={{
+                  marginTop: '16px',
+                  padding: '40px',
+                  textAlign: 'center',
+                  color: isDark ? '#94a3b8' : '#64748b'
+                }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    border: '3px solid',
+                    borderColor: isDark ? '#334155' : '#e2e8f0',
+                    borderTopColor: '#667eea',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                    margin: '0 auto'
+                  }}></div>
+                  <p style={{ marginTop: '12px', fontSize: '13px' }}>Chargement des graphiques...</p>
+                </div>
+              }>
+                <WeatherChart forecast={forecast} />
+              </Suspense>
             )}
           </>
         ) : (
