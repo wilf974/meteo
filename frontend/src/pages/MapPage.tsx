@@ -12,6 +12,7 @@ import RealTemperatureLayer from '../components/map/RealTemperatureLayer';
 import RealPrecipitationLayer from '../components/map/RealPrecipitationLayer';
 import RealWindLayer from '../components/map/RealWindLayer';
 import RealCloudLayer from '../components/map/RealCloudLayer';
+import RealPressureLayer from '../components/map/RealPressureLayer';
 import 'leaflet/dist/leaflet.css';
 
 // Lazy load non-critical components for better initial load performance
@@ -73,6 +74,7 @@ export default function MapPage() {
         <RealCloudLayer />
         <RealPrecipitationLayer />
         <RealWindLayer />
+        <RealPressureLayer />
 
         {/* Location search with autocomplete - Lazy loaded */}
         <Suspense fallback={<div />}>

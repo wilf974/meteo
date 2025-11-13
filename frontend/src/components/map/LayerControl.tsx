@@ -1,12 +1,13 @@
 import { useState, useEffect, memo, useCallback } from 'react';
 import { useLayerControlState } from '../../store/mapSelectors';
-import { Layers, ChevronDown, ChevronUp, X, Thermometer, Cloud, Wind, Droplets } from 'lucide-react';
+import { Layers, ChevronDown, ChevronUp, X, Thermometer, Cloud, Wind, Droplets, Gauge } from 'lucide-react';
 
 const LAYER_ICONS: { [key: string]: { icon: React.ElementType; color: string; bgColor: string } } = {
   temperature: { icon: Thermometer, color: '#ff9800', bgColor: 'rgba(255, 152, 0, 0.1)' },
   precipitation: { icon: Droplets, color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.1)' },
   wind: { icon: Wind, color: '#6366f1', bgColor: 'rgba(99, 102, 241, 0.1)' },
   clouds: { icon: Cloud, color: '#9ca3af', bgColor: 'rgba(156, 163, 175, 0.1)' },
+  pressure: { icon: Gauge, color: '#a855f7', bgColor: 'rgba(168, 85, 247, 0.1)' },
 };
 
 const LayerControl = memo(function LayerControl() {
