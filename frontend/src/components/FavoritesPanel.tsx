@@ -37,7 +37,7 @@ const FavoritesPanel = memo(function FavoritesPanel() {
       style={{
         position: 'fixed',
         bottom: isExpanded ? '120px' : '120px',
-        left: '20px',
+        left: '276px', // 256px (sidebar width) + 20px margin
         zIndex: 900,
         minWidth: '280px',
         maxWidth: '320px',
