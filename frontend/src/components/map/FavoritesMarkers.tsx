@@ -40,14 +40,9 @@ const createCustomIcon = (isDark: boolean) => {
 
 const FavoritesMarkers = memo(function FavoritesMarkers() {
   const { favorites, removeFavorite } = useFavoritesStore();
-  const { setSelectedPoint } = useMapStore();
   const { effectiveTheme } = useThemeStore();
   const isDark = effectiveTheme === 'dark';
   const map = useMap();
-
-  const handleMarkerClick = useCallback((lat: number, lon: number) => {
-    setSelectedPoint({ lat, lon });
-  }, [setSelectedPoint]);
 
   const handleFlyTo = useCallback((lat: number, lon: number) => {
     map.flyTo([lat, lon], 12, { duration: 1.5 });
@@ -66,9 +61,6 @@ const FavoritesMarkers = memo(function FavoritesMarkers() {
           key={favorite.id}
           position={[favorite.lat, favorite.lon]}
           icon={createCustomIcon(isDark)}
-          eventHandlers={{
-            click: () => handleMarkerClick(favorite.lat, favorite.lon),
-          }}
         >
           <Popup>
             <div style={{

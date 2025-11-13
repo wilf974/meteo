@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, MapPin, Thermometer, Droplets, Wind, Star, TrendingUp, TrendingDown } from 'lucide-react';
-import { useFavoritesStore } from '../store/favoritesStore';
+import { LayoutDashboard, MapPin, Thermometer, Droplets, Wind, Star, TrendingUp, TrendingDown, Bell, BellOff, Mail, Monitor, ChevronDown, ChevronUp } from 'lucide-react';
+import { useFavoritesStore, FavoriteLocation } from '../store/favoritesStore';
 import { useThemeStore } from '../store/themeStore';
 import { weatherCache } from '../services/weatherCache.service';
 import { getWeatherAtTime, type ForecastResponse, type WeatherData } from '../services/openMeteo.service';
@@ -13,13 +13,16 @@ interface FavoriteWeather {
   country: string;
   weather: WeatherData | null;
   loading: boolean;
+  favorite: FavoriteLocation;
 }
 
 export default function DashboardPage() {
-  const { favorites } = useFavoritesStore();
+  const { favorites, updateAlerts } = useFavoritesStore();
   const { effectiveTheme } = useThemeStore();
   const isDark = effectiveTheme === 'dark';
   const [favoritesWeather, setFavoritesWeather] = useState<FavoriteWeather[]>([]);
+  const [expandedAlerts, setExpandedAlerts] = useState<Record<string, boolean>>({});
+  const [emailInputs, setEmailInputs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const loadWeatherData = async () => {
@@ -38,6 +41,7 @@ export default function DashboardPage() {
           country: fav.country,
           weather: null,
           loading: true,
+          favorite: fav,
         }))
       );
 
@@ -54,6 +58,7 @@ export default function DashboardPage() {
             country: fav.country,
             weather: currentWeather,
             loading: false,
+            favorite: fav,
           };
         } catch (error) {
           console.error(`Error fetching weather for ${fav.name}:`, error);
@@ -65,6 +70,7 @@ export default function DashboardPage() {
             country: fav.country,
             weather: null,
             loading: false,
+            favorite: fav,
           };
         }
       });
@@ -289,6 +295,203 @@ export default function DashboardPage() {
                           }}>
                             {fw.weather.windSpeed.toFixed(1)} km/h
                           </span>
+                        </div>
+
+                        {/* Divider */}
+                        <div style={{
+                          borderTop: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`,
+                          margin: '12px 0'
+                        }}></div>
+
+                        {/* Alerts Section */}
+                        <div>
+                          <div
+                            onClick={() => setExpandedAlerts(prev => ({ ...prev, [fw.id]: !prev[fw.id] }))}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              padding: '8px',
+                              background: (fw.favorite.alerts.email.enabled || fw.favorite.alerts.browser.enabled)
+                                ? (isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.1)')
+                                : (isDark ? 'rgba(107, 114, 128, 0.15)' : 'rgba(107, 114, 128, 0.1)'),
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              border: `1px solid ${(fw.favorite.alerts.email.enabled || fw.favorite.alerts.browser.enabled) ? '#22c55e' : (isDark ? '#6b7280' : '#9ca3af')}`,
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            {(fw.favorite.alerts.email.enabled || fw.favorite.alerts.browser.enabled) ? (
+                              <Bell size={14} style={{ color: '#22c55e' }} />
+                            ) : (
+                              <BellOff size={14} style={{ color: isDark ? '#6b7280' : '#9ca3af' }} />
+                            )}
+                            <span style={{
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              flex: 1,
+                              color: (fw.favorite.alerts.email.enabled || fw.favorite.alerts.browser.enabled) ? '#22c55e' : (isDark ? '#94a3b8' : '#6b7280'),
+                            }}>
+                              {(fw.favorite.alerts.email.enabled || fw.favorite.alerts.browser.enabled) ? 'Alertes actives' : 'Configurer alertes'}
+                            </span>
+                            {expandedAlerts[fw.id] ? (
+                              <ChevronUp size={14} style={{ color: isDark ? '#94a3b8' : '#6b7280' }} />
+                            ) : (
+                              <ChevronDown size={14} style={{ color: isDark ? '#94a3b8' : '#6b7280' }} />
+                            )}
+                          </div>
+
+                          {/* Alerts Options */}
+                          {expandedAlerts[fw.id] && (
+                            <div style={{
+                              marginTop: '8px',
+                              padding: '12px',
+                              background: isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.03)',
+                              borderRadius: '8px',
+                              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'}`,
+                            }}>
+                              {/* Email Alerts */}
+                              <div style={{ marginBottom: '12px' }}>
+                                <div
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const currentEmail = emailInputs[fw.id] || fw.favorite.alerts.email.address;
+                                    if (!fw.favorite.alerts.email.enabled && !currentEmail) {
+                                      return;
+                                    }
+                                    updateAlerts(fw.id, {
+                                      email: { enabled: !fw.favorite.alerts.email.enabled, address: currentEmail }
+                                    });
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '8px',
+                                    background: fw.favorite.alerts.email.enabled
+                                      ? (isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)')
+                                      : (isDark ? 'rgba(107, 114, 128, 0.1)' : 'rgba(107, 114, 128, 0.05)'),
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    border: `1px solid ${fw.favorite.alerts.email.enabled ? '#3b82f6' : (isDark ? '#4b5563' : '#d1d5db')}`,
+                                  }}
+                                >
+                                  <Mail size={14} style={{ color: fw.favorite.alerts.email.enabled ? '#3b82f6' : (isDark ? '#9ca3af' : '#6b7280') }} />
+                                  <span style={{
+                                    fontSize: '12px',
+                                    fontWeight: '600',
+                                    flex: 1,
+                                    color: fw.favorite.alerts.email.enabled ? '#3b82f6' : (isDark ? '#9ca3af' : '#6b7280'),
+                                  }}>
+                                    Email
+                                  </span>
+                                  <div style={{
+                                    width: '36px',
+                                    height: '18px',
+                                    borderRadius: '9px',
+                                    background: fw.favorite.alerts.email.enabled ? '#3b82f6' : (isDark ? '#4b5563' : '#d1d5db'),
+                                    position: 'relative',
+                                    transition: 'all 0.2s ease',
+                                  }}>
+                                    <div style={{
+                                      width: '14px',
+                                      height: '14px',
+                                      borderRadius: '50%',
+                                      background: 'white',
+                                      position: 'absolute',
+                                      top: '2px',
+                                      left: fw.favorite.alerts.email.enabled ? '20px' : '2px',
+                                      transition: 'all 0.2s ease',
+                                    }} />
+                                  </div>
+                                </div>
+                                <input
+                                  type="email"
+                                  placeholder="votre@email.com"
+                                  value={emailInputs[fw.id] !== undefined ? emailInputs[fw.id] : fw.favorite.alerts.email.address}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    setEmailInputs(prev => ({ ...prev, [fw.id]: e.target.value }));
+                                  }}
+                                  onBlur={(e) => {
+                                    e.stopPropagation();
+                                    const email = e.target.value;
+                                    if (email && fw.favorite.alerts.email.enabled) {
+                                      updateAlerts(fw.id, { email: { enabled: true, address: email } });
+                                    }
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{
+                                    width: '100%',
+                                    marginTop: '6px',
+                                    padding: '6px 8px',
+                                    fontSize: '11px',
+                                    background: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.8)',
+                                    border: `1px solid ${isDark ? '#4b5563' : '#d1d5db'}`,
+                                    borderRadius: '4px',
+                                    color: isDark ? '#f1f5f9' : '#111827',
+                                    outline: 'none',
+                                  }}
+                                />
+                              </div>
+
+                              {/* Browser Alerts */}
+                              <div>
+                                <div
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateAlerts(fw.id, {
+                                      browser: { enabled: !fw.favorite.alerts.browser.enabled }
+                                    });
+                                    if (!fw.favorite.alerts.browser.enabled && 'Notification' in window && Notification.permission === 'default') {
+                                      Notification.requestPermission();
+                                    }
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '8px',
+                                    background: fw.favorite.alerts.browser.enabled
+                                      ? (isDark ? 'rgba(168, 85, 247, 0.15)' : 'rgba(168, 85, 247, 0.1)')
+                                      : (isDark ? 'rgba(107, 114, 128, 0.1)' : 'rgba(107, 114, 128, 0.05)'),
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    border: `1px solid ${fw.favorite.alerts.browser.enabled ? '#a855f7' : (isDark ? '#4b5563' : '#d1d5db')}`,
+                                  }}
+                                >
+                                  <Monitor size={14} style={{ color: fw.favorite.alerts.browser.enabled ? '#a855f7' : (isDark ? '#9ca3af' : '#6b7280') }} />
+                                  <span style={{
+                                    fontSize: '12px',
+                                    fontWeight: '600',
+                                    flex: 1,
+                                    color: fw.favorite.alerts.browser.enabled ? '#a855f7' : (isDark ? '#9ca3af' : '#6b7280'),
+                                  }}>
+                                    Navigateur
+                                  </span>
+                                  <div style={{
+                                    width: '36px',
+                                    height: '18px',
+                                    borderRadius: '9px',
+                                    background: fw.favorite.alerts.browser.enabled ? '#a855f7' : (isDark ? '#4b5563' : '#d1d5db'),
+                                    position: 'relative',
+                                    transition: 'all 0.2s ease',
+                                  }}>
+                                    <div style={{
+                                      width: '14px',
+                                      height: '14px',
+                                      borderRadius: '50%',
+                                      background: 'white',
+                                      position: 'absolute',
+                                      top: '2px',
+                                      left: fw.favorite.alerts.browser.enabled ? '20px' : '2px',
+                                      transition: 'all 0.2s ease',
+                                    }} />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ) : (
