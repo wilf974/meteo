@@ -1,5 +1,4 @@
-import { Response, NextFunction } from 'express';
-import { AuthRequest } from '../middleware/auth';
+import { Request, Response, NextFunction } from 'express';
 import { AppDataSource } from '../config/database';
 import { Alert } from '../entities/Alert.entity';
 import { AppError } from '../middleware/errorHandler';
@@ -7,7 +6,7 @@ import { AppError } from '../middleware/errorHandler';
 export class AlertController {
   private alertRepository = AppDataSource.getRepository(Alert);
 
-  getAllAlerts = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getAllAlerts = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const alerts = await this.alertRepository.find({
         where: { userId: req.user!.id },
@@ -23,7 +22,7 @@ export class AlertController {
     }
   };
 
-  createAlert = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  createAlert = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { name, description, conditions, zone, notificationChannels } = req.body;
 
@@ -51,7 +50,7 @@ export class AlertController {
     }
   };
 
-  getAlertById = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getAlertById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { alertId } = req.params;
 
@@ -72,7 +71,7 @@ export class AlertController {
     }
   };
 
-  updateAlert = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  updateAlert = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { alertId } = req.params;
       const updates = req.body;
@@ -97,7 +96,7 @@ export class AlertController {
     }
   };
 
-  deleteAlert = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  deleteAlert = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { alertId } = req.params;
 

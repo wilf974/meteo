@@ -1,9 +1,8 @@
-import { Response, NextFunction } from 'express';
-import { AuthRequest } from '../middleware/auth';
+import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../middleware/errorHandler';
 
 export class LayerController {
-  getAllLayers = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getAllLayers = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const layers = [
         { id: 'temperature', name: 'Température', type: 'heatmap', available: true },
@@ -29,7 +28,7 @@ export class LayerController {
     }
   };
 
-  getLayerById = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getLayerById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { layerId } = req.params;
 
@@ -50,7 +49,7 @@ export class LayerController {
     }
   };
 
-  getLayerData = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getLayerData = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { layerId } = req.params;
       const { bbox, timestamp } = req.query;

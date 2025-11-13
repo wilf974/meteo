@@ -1,12 +1,11 @@
-import { Response, NextFunction } from 'express';
-import { AuthRequest } from '../middleware/auth';
+import { Request, Response, NextFunction } from 'express';
 import { WeatherService } from '../services/weather.service';
 import { AppError } from '../middleware/errorHandler';
 
 export class WeatherController {
   private weatherService = new WeatherService();
 
-  getCurrentWeather = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getCurrentWeather = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { lat, lon } = req.query;
 
@@ -28,7 +27,7 @@ export class WeatherController {
     }
   };
 
-  getForecast = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getForecast = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { lat, lon, days = 7 } = req.query;
 
@@ -51,7 +50,7 @@ export class WeatherController {
     }
   };
 
-  getRadarLayer = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getRadarLayer = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { layer } = req.params;
       const { bbox } = req.query;
@@ -74,7 +73,7 @@ export class WeatherController {
     }
   };
 
-  getSatelliteImagery = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getSatelliteImagery = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { bbox, timestamp } = req.query;
 
@@ -92,7 +91,7 @@ export class WeatherController {
     }
   };
 
-  uploadCustomModel = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  uploadCustomModel = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { modelData, metadata } = req.body;
 

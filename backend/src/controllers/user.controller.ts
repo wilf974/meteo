@@ -1,5 +1,4 @@
-import { Response, NextFunction } from 'express';
-import { AuthRequest } from '../middleware/auth';
+import { Request, Response, NextFunction } from 'express';
 import { AppDataSource } from '../config/database';
 import { User } from '../entities/User.entity';
 import { AppError } from '../middleware/errorHandler';
@@ -7,7 +6,7 @@ import { AppError } from '../middleware/errorHandler';
 export class UserController {
   private userRepository = AppDataSource.getRepository(User);
 
-  getProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getProfile = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = await this.userRepository.findOne({
         where: { id: req.user!.id }
@@ -35,7 +34,7 @@ export class UserController {
     }
   };
 
-  updateProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  updateProfile = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { name } = req.body;
 
@@ -60,7 +59,7 @@ export class UserController {
     }
   };
 
-  getPreferences = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getPreferences = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = await this.userRepository.findOne({
         where: { id: req.user!.id }
@@ -79,7 +78,7 @@ export class UserController {
     }
   };
 
-  updatePreferences = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  updatePreferences = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const preferences = req.body;
 
