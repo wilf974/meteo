@@ -7,6 +7,7 @@ import { socketService } from '../lib/socket';
 import LayerControl from '../components/map/LayerControl';
 import WeatherInfo from '../components/map/WeatherInfo';
 import Timeline from '../components/map/Timeline';
+import ThemeToggle from '../components/ThemeToggle';
 import RealTemperatureLayer from '../components/map/RealTemperatureLayer';
 import RealPrecipitationLayer from '../components/map/RealPrecipitationLayer';
 import RealWindLayer from '../components/map/RealWindLayer';
@@ -16,6 +17,7 @@ import 'leaflet/dist/leaflet.css';
 // Lazy load non-critical components for better initial load performance
 const LocationSearch = lazy(() => import('../components/map/LocationSearch'));
 const MapLegend = lazy(() => import('../components/map/MapLegend'));
+const FavoritesPanel = lazy(() => import('../components/FavoritesPanel'));
 
 const MapEvents = memo(function MapEvents() {
   const setCenter = useSetCenter();
@@ -77,9 +79,15 @@ export default function MapPage() {
           <LocationSearch />
         </Suspense>
 
+        {/* Favorites panel - Lazy loaded */}
+        <Suspense fallback={<div />}>
+          <FavoritesPanel />
+        </Suspense>
+
         <MapEvents />
       </MapContainer>
 
+      <ThemeToggle />
       <LayerControl />
       <WeatherInfo />
       <Timeline />

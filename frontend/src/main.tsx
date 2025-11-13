@@ -3,8 +3,11 @@ import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import App from './App';
 import './index.css';
+import './styles/theme.css';
+import { registerServiceWorker, setupNetworkDetection, skipWaiting } from './utils/pwa';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,3 +52,70 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </React.StrictMode>
 );
+
+// Register service worker for PWA functionality
+if (import.meta.env.PROD) {
+  registerServiceWorker({
+    onSuccess: (registration) => {
+      console.log('Service Worker registered successfully');
+    },
+    onUpdate: (registration) => {
+      toast((t) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ fontWeight: 'bold' }}>Nouvelle version disponible!</div>
+          <div style={{ fontSize: '14px' }}>Cliquez pour mettre à jour</div>
+          <button
+            onClick={() => {
+              skipWaiting();
+              window.location.reload();
+              toast.dismiss(t.id);
+            }}
+            style={{
+              marginTop: '8px',
+              padding: '8px 16px',
+              background: '#667eea',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            Mettre à jour maintenant
+          </button>
+        </div>
+      ), {
+        duration: Infinity,
+        icon: '🔄',
+      });
+    },
+    onOffline: () => {
+      toast.error('Mode hors ligne - Données en cache utilisées', {
+        icon: '📡',
+        duration: 5000,
+      });
+    },
+    onOnline: () => {
+      toast.success('Connexion rétablie', {
+        icon: '✅',
+        duration: 3000,
+      });
+    },
+  });
+
+  // Setup network detection
+  setupNetworkDetection({
+    onOffline: () => {
+      toast.error('Mode hors ligne - Données en cache utilisées', {
+        icon: '📡',
+        duration: 5000,
+      });
+    },
+    onOnline: () => {
+      toast.success('Connexion rétablie', {
+        icon: '✅',
+        duration: 3000,
+      });
+    },
+  });
+}
