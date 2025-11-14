@@ -111,25 +111,27 @@ const Timeline = memo(function Timeline() {
     <div
       style={{
         position: 'absolute',
-        bottom: '20px',
+        bottom: window.innerWidth < 768 ? '12px' : '20px',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 1000,
         backgroundColor: isDark ? 'rgba(30, 30, 40, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-        borderRadius: '16px',
+        borderRadius: window.innerWidth < 768 ? '12px' : '16px',
         boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
         backdropFilter: 'blur(10px)',
         border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
-        padding: '16px 24px',
-        maxWidth: 'calc(100vw - 40px)',
-        minWidth: '320px',
+        padding: window.innerWidth < 768 ? '12px 16px' : '16px 24px',
+        maxWidth: 'calc(100vw - 24px)',
+        minWidth: window.innerWidth < 768 ? 'auto' : '320px',
+        width: window.innerWidth < 768 ? 'calc(100vw - 24px)' : 'auto',
         transition: 'all 0.3s ease',
       }}
       onMouseEnter={() => setShowSlider(true)}
       onMouseLeave={() => setShowSlider(false)}
+      onTouchStart={() => setShowSlider(true)}
     >
       {/* Main Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: window.innerWidth < 768 ? '8px' : '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
         {/* Previous */}
         <button
           onClick={handlePrevious}
@@ -137,10 +139,13 @@ const Timeline = memo(function Timeline() {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            padding: '8px',
+            padding: window.innerWidth < 768 ? '10px' : '8px',
+            minWidth: window.innerWidth < 768 ? '44px' : 'auto',
+            minHeight: window.innerWidth < 768 ? '44px' : 'auto',
             borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             transition: 'all 0.2s',
             color: isDark ? '#94a3b8' : '#6b7280',
           }}
@@ -165,10 +170,13 @@ const Timeline = memo(function Timeline() {
               : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             border: 'none',
             cursor: 'pointer',
-            padding: '12px',
+            padding: window.innerWidth < 768 ? '14px' : '12px',
+            minWidth: window.innerWidth < 768 ? '48px' : 'auto',
+            minHeight: window.innerWidth < 768 ? '48px' : 'auto',
             borderRadius: '12px',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             transition: 'all 0.3s',
             boxShadow: isPlaying
               ? '0 4px 12px rgba(245, 158, 11, 0.4)'
@@ -195,10 +203,13 @@ const Timeline = memo(function Timeline() {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            padding: '8px',
+            padding: window.innerWidth < 768 ? '10px' : '8px',
+            minWidth: window.innerWidth < 768 ? '44px' : 'auto',
+            minHeight: window.innerWidth < 768 ? '44px' : 'auto',
             borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             transition: 'all 0.2s',
             color: isDark ? '#94a3b8' : '#6b7280',
           }}
@@ -222,14 +233,15 @@ const Timeline = memo(function Timeline() {
             background: 'none',
             border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'}`,
             cursor: 'pointer',
-            padding: '6px 10px',
+            padding: window.innerWidth < 768 ? '8px 12px' : '6px 10px',
+            minHeight: window.innerWidth < 768 ? '44px' : 'auto',
             borderRadius: '8px',
-            display: 'flex',
+            display: window.innerWidth < 480 ? 'none' : 'flex',
             alignItems: 'center',
             gap: '4px',
             transition: 'all 0.2s',
             color: '#667eea',
-            fontSize: '12px',
+            fontSize: window.innerWidth < 768 ? '13px' : '12px',
             fontWeight: '600',
           }}
           onMouseEnter={(e) => {
@@ -246,15 +258,15 @@ const Timeline = memo(function Timeline() {
         </button>
 
         {/* Divider */}
-        <div style={{ width: '1px', height: '32px', backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }} />
+        <div style={{ width: '1px', height: '32px', backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)', display: window.innerWidth < 768 ? 'none' : 'block' }} />
 
         {/* Date/Time Display */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: window.innerWidth < 768 ? '8px' : '12px', width: window.innerWidth < 768 ? '100%' : 'auto', justifyContent: window.innerWidth < 768 ? 'center' : 'flex-start' }}>
           {/* Day/Night Indicator */}
           <div
             style={{
-              width: '36px',
-              height: '36px',
+              width: window.innerWidth < 768 ? '32px' : '36px',
+              height: window.innerWidth < 768 ? '32px' : '36px',
               borderRadius: '10px',
               backgroundColor: isDaytime ? 'rgba(251, 191, 36, 0.1)' : 'rgba(99, 102, 241, 0.1)',
               display: 'flex',
@@ -270,23 +282,24 @@ const Timeline = memo(function Timeline() {
           </div>
 
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', color: isDark ? '#f1f5f9' : '#111827' }}>
+            <div style={{ fontSize: window.innerWidth < 768 ? '13px' : '14px', fontWeight: 'bold', color: isDark ? '#f1f5f9' : '#111827' }}>
               {format(displayTime, 'HH:mm', { locale: fr })}
               {isNow && (
                 <span style={{
-                  marginLeft: '8px',
-                  fontSize: '10px',
+                  marginLeft: '6px',
+                  fontSize: window.innerWidth < 768 ? '9px' : '10px',
                   color: '#10b981',
                   fontWeight: '600',
                   padding: '2px 6px',
                   backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                  borderRadius: '4px'
+                  borderRadius: '4px',
+                  display: window.innerWidth < 480 ? 'none' : 'inline'
                 }}>
                   EN DIRECT
                 </span>
               )}
             </div>
-            <div style={{ fontSize: '11px', color: isDark ? '#94a3b8' : '#6b7280' }}>
+            <div style={{ fontSize: window.innerWidth < 768 ? '10px' : '11px', color: isDark ? '#94a3b8' : '#6b7280' }}>
               {format(displayTime, 'dd MMM yyyy', { locale: fr })}
             </div>
           </div>
@@ -295,20 +308,21 @@ const Timeline = memo(function Timeline() {
         {/* Now Button */}
         {!isNow && (
           <>
-            <div style={{ width: '1px', height: '32px', backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }} />
+            <div style={{ width: '1px', height: '32px', backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)', display: window.innerWidth < 768 ? 'none' : 'block' }} />
             <button
               onClick={handleNow}
               style={{
                 background: 'rgba(59, 130, 246, 0.1)',
                 border: '1px solid rgba(59, 130, 246, 0.3)',
                 cursor: 'pointer',
-                padding: '8px 12px',
+                padding: window.innerWidth < 768 ? '10px 14px' : '8px 12px',
+                minHeight: window.innerWidth < 768 ? '44px' : 'auto',
                 borderRadius: '8px',
-                display: 'flex',
+                display: window.innerWidth < 480 ? 'none' : 'flex',
                 alignItems: 'center',
                 gap: '6px',
                 transition: 'all 0.2s',
-                fontSize: '12px',
+                fontSize: window.innerWidth < 768 ? '13px' : '12px',
                 fontWeight: '600',
                 color: '#3b82f6',
               }}

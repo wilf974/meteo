@@ -82,13 +82,14 @@ const FavoritesPanel = memo(function FavoritesPanel() {
       ref={panelRef}
       style={{
         position: 'fixed',
-        bottom: isExpanded ? '120px' : '120px',
-        left: '276px', // 256px (sidebar width) + 20px margin
+        bottom: window.innerWidth < 1024 ? '100px' : '120px',
+        left: window.innerWidth < 1024 ? '50%' : '276px', // 256px (sidebar width) + 20px margin
+        transform: window.innerWidth < 1024 ? 'translateX(-50%)' : 'none',
         zIndex: 900,
-        minWidth: '280px',
-        maxWidth: '320px',
+        minWidth: window.innerWidth < 640 ? 'calc(100vw - 32px)' : '280px',
+        maxWidth: window.innerWidth < 640 ? 'calc(100vw - 32px)' : '320px',
         background: isDark ? 'rgba(30, 30, 40, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-        borderRadius: '16px',
+        borderRadius: window.innerWidth < 640 ? '12px' : '16px',
         boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
         backdropFilter: 'blur(10px)',
         border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
@@ -407,7 +408,9 @@ const FavoritesPanel = memo(function FavoritesPanel() {
                   <button
                     onClick={(e) => handleRemove(e, fav.id)}
                     style={{
-                      padding: '6px',
+                      padding: window.innerWidth < 768 ? '10px' : '6px',
+                      minWidth: window.innerWidth < 768 ? '44px' : 'auto',
+                      minHeight: window.innerWidth < 768 ? '44px' : 'auto',
                       background: 'transparent',
                       border: 'none',
                       borderRadius: '6px',

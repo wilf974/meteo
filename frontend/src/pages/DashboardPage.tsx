@@ -106,15 +106,15 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="h-full overflow-auto p-8" style={{
+    <div className="h-full overflow-auto p-4 sm:p-6 md:p-8" style={{
       backgroundColor: isDark ? '#0f172a' : '#f8fafc',
       transition: 'background-color 0.3s ease'
     }}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <LayoutDashboard className="w-8 h-8" style={{ color: '#667eea' }} />
-          <h1 className="text-3xl font-bold" style={{
+        <div className="flex items-center gap-2 sm:gap-3 mb-6 md:mb-8">
+          <LayoutDashboard className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: '#667eea' }} />
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold" style={{
             color: isDark ? '#f1f5f9' : '#1e293b'
           }}>
             Tableau de bord météo
@@ -124,8 +124,8 @@ export default function DashboardPage() {
         {/* Stats Cards */}
         {favorites.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <div className="rounded-lg p-6 border" style={{
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+              <div className="rounded-lg p-4 sm:p-6 border" style={{
                 backgroundColor: isDark ? '#1e293b' : '#ffffff',
                 borderColor: isDark ? '#334155' : '#e2e8f0',
                 transition: 'all 0.3s ease'
@@ -143,7 +143,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg p-6 border" style={{
+              <div className="rounded-lg p-4 sm:p-6 border" style={{
                 backgroundColor: isDark ? '#1e293b' : '#ffffff',
                 borderColor: isDark ? '#334155' : '#e2e8f0',
                 transition: 'all 0.3s ease'
@@ -163,7 +163,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg p-6 border" style={{
+              <div className="rounded-lg p-4 sm:p-6 border" style={{
                 backgroundColor: isDark ? '#1e293b' : '#ffffff',
                 borderColor: isDark ? '#334155' : '#e2e8f0',
                 transition: 'all 0.3s ease'
@@ -183,7 +183,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg p-6 border" style={{
+              <div className="rounded-lg p-4 sm:p-6 border" style={{
                 backgroundColor: isDark ? '#1e293b' : '#ffffff',
                 borderColor: isDark ? '#334155' : '#e2e8f0',
                 transition: 'all 0.3s ease'
@@ -205,21 +205,21 @@ export default function DashboardPage() {
             </div>
 
             {/* Weather Cards for Favorites */}
-            <div className="rounded-lg p-6 border" style={{
+            <div className="rounded-lg p-4 sm:p-6 border" style={{
               backgroundColor: isDark ? '#1e293b' : '#ffffff',
               borderColor: isDark ? '#334155' : '#e2e8f0',
               transition: 'all 0.3s ease'
             }}>
-              <h2 className="text-xl font-semibold mb-4" style={{
+              <h2 className="text-lg sm:text-xl font-semibold mb-4" style={{
                 color: isDark ? '#f1f5f9' : '#1e293b'
               }}>
                 Météo de vos lieux favoris
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {favoritesWeather.map((fw) => (
                   <div
                     key={fw.id}
-                    className="rounded-lg p-4 border"
+                    className="rounded-lg p-3 sm:p-4 border"
                     style={{
                       backgroundColor: isDark ? '#334155' : '#f8fafc',
                       borderColor: isDark ? '#475569' : '#e2e8f0',
@@ -508,7 +508,7 @@ export default function DashboardPage() {
           </>
         ) : (
           /* Empty State */
-          <div className="rounded-lg p-12 text-center border" style={{
+          <div className="rounded-lg p-8 sm:p-12 text-center border" style={{
             backgroundColor: isDark ? '#1e293b' : '#ffffff',
             borderColor: isDark ? '#334155' : '#e2e8f0',
             transition: 'all 0.3s ease'

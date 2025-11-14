@@ -150,11 +150,11 @@ const LocationSearch = memo(function LocationSearch() {
       className="location-search"
       style={{
         position: 'absolute',
-        top: '20px',
+        top: window.innerWidth < 768 ? '12px' : '20px',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 1000,
-        width: '90%',
+        width: window.innerWidth < 768 ? 'calc(100% - 80px)' : '90%',
         maxWidth: '500px',
       }}
     >
@@ -171,14 +171,15 @@ const LocationSearch = memo(function LocationSearch() {
           placeholder="Rechercher une ville..."
           style={{
             width: '100%',
-            padding: '12px 45px 12px 45px',
+            padding: window.innerWidth < 768 ? '14px 50px 14px 45px' : '12px 45px 12px 45px',
             fontSize: '16px',
             border: '2px solid rgba(0, 0, 0, 0.2)',
-            borderRadius: '8px',
+            borderRadius: window.innerWidth < 768 ? '10px' : '8px',
             outline: 'none',
             backgroundColor: 'white',
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
             transition: 'border-color 0.2s',
+            minHeight: window.innerWidth < 768 ? '48px' : 'auto',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.5)';
@@ -331,7 +332,9 @@ const LocationSearch = memo(function LocationSearch() {
                   disabled={isResultFavorite}
                   title={isResultFavorite ? 'Déjà dans les favoris' : 'Ajouter aux favoris'}
                   style={{
-                    padding: '8px',
+                    padding: window.innerWidth < 768 ? '10px' : '8px',
+                    minWidth: window.innerWidth < 768 ? '44px' : 'auto',
+                    minHeight: window.innerWidth < 768 ? '44px' : 'auto',
                     background: isResultFavorite
                       ? (isDark ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.1)')
                       : 'transparent',

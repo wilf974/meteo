@@ -192,16 +192,19 @@ const WeatherInfo = memo(function WeatherInfo() {
     <div
       style={{
         position: 'absolute',
-        bottom: '90px',
-        left: '20px',
+        bottom: window.innerWidth < 768 ? '100px' : '90px',
+        left: window.innerWidth < 768 ? '50%' : '20px',
+        transform: window.innerWidth < 768 ? 'translateX(-50%)' : 'none',
         zIndex: 1000,
         backgroundColor: isDark ? 'rgba(30, 30, 40, 0.98)' : 'rgba(255, 255, 255, 0.98)',
         borderRadius: '16px',
         boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
         backdropFilter: 'blur(10px)',
         border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
-        width: '340px',
-        maxWidth: 'calc(100vw - 40px)',
+        width: window.innerWidth < 768 ? 'calc(100vw - 24px)' : '340px',
+        maxWidth: window.innerWidth < 768 ? '480px' : '340px',
+        maxHeight: window.innerWidth < 768 ? 'calc(100vh - 180px)' : 'none',
+        overflowY: window.innerWidth < 768 ? 'auto' : 'visible',
       }}
     >
       {/* Header */}
@@ -210,7 +213,7 @@ const WeatherInfo = memo(function WeatherInfo() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '16px 20px',
+          padding: window.innerWidth < 768 ? '12px 16px' : '16px 20px',
           borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
         }}
       >
@@ -246,7 +249,9 @@ const WeatherInfo = memo(function WeatherInfo() {
                 : `1px solid ${isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}`,
               cursor: isLocationFavorite ? 'default' : 'pointer',
               color: isLocationFavorite ? '#f59e0b' : (isDark ? '#cbd5e1' : '#9ca3af'),
-              padding: '8px',
+              padding: window.innerWidth < 768 ? '10px' : '8px',
+              minWidth: window.innerWidth < 768 ? '44px' : 'auto',
+              minHeight: window.innerWidth < 768 ? '44px' : 'auto',
               borderRadius: '8px',
               transition: 'all 0.2s',
               display: 'flex',
@@ -282,7 +287,9 @@ const WeatherInfo = memo(function WeatherInfo() {
               border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}`,
               cursor: 'pointer',
               color: isDark ? '#cbd5e1' : '#9ca3af',
-              padding: '8px',
+              padding: window.innerWidth < 768 ? '10px' : '8px',
+              minWidth: window.innerWidth < 768 ? '44px' : 'auto',
+              minHeight: window.innerWidth < 768 ? '44px' : 'auto',
               borderRadius: '8px',
               transition: 'all 0.2s',
               display: 'flex',
@@ -306,7 +313,7 @@ const WeatherInfo = memo(function WeatherInfo() {
       </div>
 
       {/* Content */}
-      <div style={{ padding: '20px' }}>
+      <div style={{ padding: window.innerWidth < 768 ? '16px' : '20px' }}>
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: '#9ca3af' }}>
             <div style={{ fontSize: '24px', marginBottom: '8px' }}>⏳</div>
