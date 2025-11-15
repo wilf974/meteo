@@ -23,6 +23,7 @@ const LocationSearch = lazy(() => import('../components/map/LocationSearch'));
 const MapLegend = lazy(() => import('../components/map/MapLegend'));
 const FavoritesPanel = lazy(() => import('../components/FavoritesPanel'));
 const GeolocationPrompt = lazy(() => import('../components/map/GeolocationPrompt'));
+const StormAlertManager = lazy(() => import('../components/map/StormAlertManager'));
 
 const MapEvents = memo(function MapEvents() {
   const setCenter = useSetCenter();
@@ -122,6 +123,11 @@ export default function MapPage() {
       {/* Geolocation prompt - Lazy loaded */}
       <Suspense fallback={<div />}>
         <GeolocationPrompt />
+      </Suspense>
+
+      {/* Storm Alert Manager - Lazy loaded */}
+      <Suspense fallback={<div />}>
+        <StormAlertManager />
       </Suspense>
     </div>
   );
