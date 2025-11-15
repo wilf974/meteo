@@ -4,6 +4,7 @@ import { useMapStore } from '../store/mapStore';
 import { useSetCenter, useSetZoom, useSetSelectedPoint } from '../store/mapSelectors';
 import { useAuthStore } from '../store/authStore';
 import { socketService } from '../lib/socket';
+import { useGeolocation } from '../hooks/useGeolocation';
 import LayerControl from '../components/map/LayerControl';
 import WeatherInfo from '../components/map/WeatherInfo';
 import Timeline from '../components/map/Timeline';
@@ -19,6 +20,7 @@ import 'leaflet/dist/leaflet.css';
 const LocationSearch = lazy(() => import('../components/map/LocationSearch'));
 const MapLegend = lazy(() => import('../components/map/MapLegend'));
 const FavoritesPanel = lazy(() => import('../components/FavoritesPanel'));
+const GeolocationPrompt = lazy(() => import('../components/map/GeolocationPrompt'));
 
 const MapEvents = memo(function MapEvents() {
   const setCenter = useSetCenter();
@@ -44,6 +46,18 @@ const MapEvents = memo(function MapEvents() {
 export default function MapPage() {
   const { center, zoom, activeLayers } = useMapStore();
   const { token } = useAuthStore();
+  const setSelectedPoint = useSetSelectedPoint();
+  const { coords: geolocationCoords } = useGeolocation();
+
+  // Auto-select user's location when geolocation is available
+  useEffect(() => {
+    if (geolocationCoords) {
+      setSelectedPoint({
+        lat: geolocationCoords.lat,
+        lon: geolocationCoords.lon,
+      });
+    }
+  }, [geolocationCoords, setSelectedPoint]);
 
   useEffect(() => {
     if (token) {
@@ -99,6 +113,11 @@ export default function MapPage() {
       {/* Map legend - Lazy loaded */}
       <Suspense fallback={<div />}>
         <MapLegend />
+      </Suspense>
+
+      {/* Geolocation prompt - Lazy loaded */}
+      <Suspense fallback={<div />}>
+        <GeolocationPrompt />
       </Suspense>
     </div>
   );
