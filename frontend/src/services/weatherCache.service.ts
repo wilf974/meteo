@@ -1,4 +1,4 @@
-import { getForecast, getAirQuality, type ForecastResponse, type AirQualityResponse } from './openMeteo.service';
+import { getForecast, getAirQuality, getNowcast, type ForecastResponse, type AirQualityResponse, type NowcastResponse } from './openMeteo.service';
 
 interface CacheEntry {
   forecast: ForecastResponse;
@@ -8,6 +8,12 @@ interface CacheEntry {
 
 interface AirQualityCacheEntry {
   airQuality: AirQualityResponse;
+  timestamp: number;
+  hits: number;
+}
+
+interface NowcastCacheEntry {
+  nowcast: NowcastResponse;
   timestamp: number;
   hits: number;
 }
@@ -23,18 +29,23 @@ interface CacheStats {
 class WeatherCacheService {
   private cache = new Map<string, CacheEntry>();
   private airQualityCache = new Map<string, AirQualityCacheEntry>();
+  private nowcastCache = new Map<string, NowcastCacheEntry>();
   private CACHE_DURATION = 10 * 60 * 1000; // 10 minutes (increased from 5)
+  private NOWCAST_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes for nowcast (frequent updates)
   private MAX_CACHE_SIZE = 1000; // Maximum cache entries
   private pendingRequests = new Map<string, Promise<ForecastResponse>>();
   private pendingAirQualityRequests = new Map<string, Promise<AirQualityResponse>>();
+  private pendingNowcastRequests = new Map<string, Promise<NowcastResponse>>();
   private stats = { hits: 0, misses: 0 };
   private airQualityStats = { hits: 0, misses: 0 };
+  private nowcastStats = { hits: 0, misses: 0 };
 
   constructor() {
     // Auto-cleanup every 5 minutes
     setInterval(() => {
       this.cleanupExpiredCache();
       this.cleanupExpiredAirQualityCache();
+      this.cleanupExpiredNowcastCache();
     }, 5 * 60 * 1000);
   }
 
@@ -177,6 +188,22 @@ class WeatherCacheService {
     }
   }
 
+  private cleanupExpiredNowcastCache() {
+    const now = Date.now();
+    let cleaned = 0;
+
+    for (const [key, entry] of this.nowcastCache.entries()) {
+      if (now - entry.timestamp > this.NOWCAST_CACHE_DURATION) {
+        this.nowcastCache.delete(key);
+        cleaned++;
+      }
+    }
+
+    if (cleaned > 0) {
+      console.log(`🧹 Cleaned ${cleaned} expired nowcast cache entries`);
+    }
+  }
+
   async getAirQuality(lat: number, lon: number, prefetch: boolean = false): Promise<AirQualityResponse> {
     const key = this.getCacheKey(lat, lon);
     const now = Date.now();
@@ -222,12 +249,53 @@ class WeatherCacheService {
     return request;
   }
 
+  async getNowcast(lat: number, lon: number): Promise<NowcastResponse> {
+    const key = this.getCacheKey(lat, lon);
+    const now = Date.now();
+
+    // Check cache
+    const cached = this.nowcastCache.get(key);
+    if (cached && (now - cached.timestamp) < this.NOWCAST_CACHE_DURATION) {
+      this.nowcastStats.hits++;
+      cached.hits++;
+      console.log(`⚡ Nowcast cache hit for ${key} (${cached.hits} hits)`);
+      return cached.nowcast;
+    }
+
+    // Check if there's already a pending request for this location
+    const pending = this.pendingNowcastRequests.get(key);
+    if (pending) {
+      console.log(`⏳ Reusing pending nowcast request for ${key}`);
+      return pending;
+    }
+
+    // Make new request
+    this.nowcastStats.misses++;
+    console.log(`⚡ Nowcast cache miss, fetching ${key}`);
+
+    const request = getNowcast(lat, lon)
+      .then(nowcast => {
+        this.nowcastCache.set(key, { nowcast, timestamp: now, hits: 0 });
+        this.pendingNowcastRequests.delete(key);
+        return nowcast;
+      })
+      .catch(error => {
+        this.pendingNowcastRequests.delete(key);
+        throw error;
+      });
+
+    this.pendingNowcastRequests.set(key, request);
+    return request;
+  }
+
   clearCache() {
     this.cache.clear();
     this.airQualityCache.clear();
+    this.nowcastCache.clear();
     this.stats = { hits: 0, misses: 0 };
     this.airQualityStats = { hits: 0, misses: 0 };
-    console.log('🗑️ Weather and air quality cache cleared');
+    this.nowcastStats = { hits: 0, misses: 0 };
+    console.log('🗑️ Weather, air quality, and nowcast cache cleared');
   }
 
   getCacheStats(): CacheStats {

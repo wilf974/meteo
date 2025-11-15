@@ -57,6 +57,23 @@ export interface WeatherData {
   aqi: number; // European Air Quality Index
 }
 
+export interface NowcastData {
+  time: string;
+  precipitation: number; // mm/10min
+  rainIntensity: 'none' | 'light' | 'moderate' | 'heavy';
+  rainChance: number; // 0-100%
+}
+
+export interface NowcastResponse {
+  latitude: number;
+  longitude: number;
+  minutely_10: {
+    time: string[];
+    precipitation: number[]; // mm/10min
+  };
+  timezone: string;
+}
+
 export interface ForecastResponse {
   latitude: number;
   longitude: number;
@@ -284,4 +301,74 @@ export async function getGridForecast(
   }
 
   return Promise.all(promises);
+}
+
+/**
+ * Récupère les prévisions minute par minute (Nowcasting) pour une position donnée
+ * Données disponibles: 96 minutes (~1.6 heures)
+ * Résolution: 10 minutes
+ */
+export async function getNowcast(
+  latitude: number,
+  longitude: number
+): Promise<NowcastResponse> {
+  try {
+    const params = new URLSearchParams({
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      minutely_10: 'precipitation',
+      timezone: 'auto',
+      forecast_minutes: '96', // ~1.6 hours
+    });
+
+    console.log('⚡ Fetching Nowcast:', `${BASE_URL}/forecast?${params}`);
+    const response = await axios.get<NowcastResponse>(`${BASE_URL}/forecast?${params}`);
+    console.log('✅ Nowcast data received:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Nowcast fetch error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Récupère les données de nowcast pour un moment spécifique
+ */
+export function getNowcastAtTime(
+  nowcast: NowcastResponse,
+  targetTime: Date
+): NowcastData | null {
+  const targetTimestamp = targetTime.getTime();
+
+  // Trouver l'index du créneau de 10 minutes le plus proche
+  let closestIndex = 0;
+  let minDiff = Infinity;
+
+  nowcast.minutely_10.time.forEach((timeStr, index) => {
+    const time = new Date(timeStr).getTime();
+    const diff = Math.abs(time - targetTimestamp);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestIndex = index;
+    }
+  });
+
+  const precipitation = nowcast.minutely_10.precipitation[closestIndex] || 0;
+
+  // Déterminer l'intensité de la pluie (0-2mm = light, 2-10mm = moderate, >10mm = heavy)
+  let rainIntensity: 'none' | 'light' | 'moderate' | 'heavy' = 'none';
+  if (precipitation > 0 && precipitation <= 2) rainIntensity = 'light';
+  else if (precipitation > 2 && precipitation <= 10) rainIntensity = 'moderate';
+  else if (precipitation > 10) rainIntensity = 'heavy';
+
+  // Calculer la probabilité de pluie (simple heuristique: 0-1 = 0-100%)
+  // Dans la vraie vie, il faudrait une API supplémentaire pour la probabilité
+  const rainChance = Math.min(100, Math.round((precipitation / 5) * 100));
+
+  return {
+    time: nowcast.minutely_10.time[closestIndex],
+    precipitation,
+    rainIntensity,
+    rainChance,
+  };
 }

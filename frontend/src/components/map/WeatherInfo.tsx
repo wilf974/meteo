@@ -1,11 +1,12 @@
 import { useEffect, useState, memo, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useWeatherInfoState } from '../../store/mapSelectors';
 import { weatherCache } from '../../services/weatherCache.service';
-import { getWeatherAtTime, getAirQualityAtTime, type WeatherData, type ForecastResponse, type AirQualityResponse } from '../../services/openMeteo.service';
+import { getWeatherAtTime, getAirQualityAtTime, getNowcastAtTime, type WeatherData, type ForecastResponse, type AirQualityResponse, type NowcastResponse, type NowcastData } from '../../services/openMeteo.service';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { useThemeStore } from '../../store/themeStore';
 import { X, Thermometer, Wind, Droplets, Gauge, Cloud, Compass, Eye, Star, TrendingUp, Sun, CloudRain, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { NowcastPanel } from './NowcastPanel';
 
 // Lazy load the chart component to reduce initial bundle size
 const WeatherChart = lazy(() => import('./WeatherChart'));
@@ -134,6 +135,7 @@ const WeatherInfo = memo(function WeatherInfo() {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [forecast, setForecast] = useState<ForecastResponse | null>(null);
   const [airQuality, setAirQuality] = useState<AirQualityResponse | null>(null);
+  const [nowcast, setNowcast] = useState<NowcastData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showChart, setShowChart] = useState(false);
 
@@ -161,11 +163,13 @@ const WeatherInfo = memo(function WeatherInfo() {
 
     setIsLoading(true);
     try {
-      // Fetch weather and air quality in parallel
+      // Fetch weather, air quality, and nowcast in parallel
       let forecastData: ForecastResponse | null = null;
       let airQualityData: AirQualityResponse | null = null;
+      let nowcastData: NowcastResponse | null = null;
       let weatherError: Error | null = null;
       let aqError: Error | null = null;
+      let nowcastError: Error | null = null;
 
       try {
         forecastData = await weatherCache.getForecast(selectedPoint.lat, selectedPoint.lon);
@@ -182,12 +186,21 @@ const WeatherInfo = memo(function WeatherInfo() {
         // Air quality is optional, don't fail completely
       }
 
+      try {
+        nowcastData = await weatherCache.getNowcast(selectedPoint.lat, selectedPoint.lon);
+      } catch (error) {
+        console.warn('Error fetching nowcast:', error);
+        nowcastError = error instanceof Error ? error : new Error('Failed to fetch nowcast');
+        // Nowcast is optional, don't fail completely
+      }
+
       // If we couldn't fetch weather at all, we can't show anything
       if (!forecastData) {
         console.error('Failed to fetch weather data:', weatherError?.message);
         setWeatherData(null);
         setForecast(null);
         setAirQuality(null);
+        setNowcast(null);
         return;
       }
 
@@ -210,14 +223,24 @@ const WeatherInfo = memo(function WeatherInfo() {
         console.warn('Air quality data unavailable, showing weather only:', aqError.message);
       }
 
+      // Merge nowcast data if available
+      let nowcastDataAtTime: NowcastData | null = null;
+      if (nowcastData) {
+        nowcastDataAtTime = getNowcastAtTime(nowcastData, selectedTime);
+      } else if (nowcastError) {
+        console.warn('Nowcast data unavailable:', nowcastError.message);
+      }
+
       setWeatherData(data);
       setForecast(forecastData);
       setAirQuality(airQualityData);
+      setNowcast(nowcastDataAtTime);
     } catch (error) {
       console.error('Unexpected error fetching weather:', error);
       setWeatherData(null);
       setForecast(null);
       setAirQuality(null);
+      setNowcast(null);
     } finally {
       setIsLoading(false);
     }
@@ -488,6 +511,9 @@ const WeatherInfo = memo(function WeatherInfo() {
                 </div>
               </div>
             </div>
+
+            {/* Nowcast Panel - Next 15 minutes alert */}
+            <NowcastPanel nowcast={nowcast} isDark={isDark} />
 
             {/* Premium Features Section */}
             <div
