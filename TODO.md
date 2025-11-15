@@ -213,6 +213,13 @@ Application météorologique ultime pour professionnels avec carte interactive m
    - [x] Système d'alertes nowcast (email + navigateur)
    - [ ] Radar précipitations avec trajectoire
 
+4. **Prévisions 7 Jours** ✅ 📅 (COMPLÉTÉE - Nov 15, 2025)
+   - [x] Panneau résumés quotidiens (min/max/précipitations)
+   - [x] Émoji météo par jour
+   - [x] Grid responsive avec scroll
+   - [x] Intégration WeatherInfo
+   - [ ] Sélection jour pour voir détails horaires
+
 ### Moyen Terme
 1. **Comparateur Multi-Lieux** 🗺️
    - [ ] Comparer 2-4 endroits côte à côte
@@ -286,7 +293,7 @@ Application météorologique ultime pour professionnels avec carte interactive m
 - **Phase 11**: 🚧 15% (PWA)
 - **Phase 12**: 🚧 40% (Déploiement OK)
 
-**Progression globale**: **~60%** 🎯 (+2% avec Nowcasting complète)
+**Progression globale**: **~61%** 🎯 (+1% avec Prévisions 7 jours complétées)
 
 ## 🎨 Principes de Design
 
@@ -330,10 +337,17 @@ Ces fonctionnalités sont **normalement payantes** chez la concurrence:
 
 **Date de création**: 2025-11-10
 **Dernière mise à jour**: 2025-11-15
-**Version**: 2.1.0 (Nowcasting Ready)
+**Version**: 2.2.0 (Daily Forecast Ready)
 **Statut**: ✅ En production - Améliorations continues
 
 ## 📝 Changelog Récent
+
+### v2.2.0 (2025-11-15)
+- ✅ Panneau prévisions 7 jours avec résumés quotidiens
+- ✅ Min/max temps, émoji météo, précipitations par jour
+- ✅ Grid responsive avec scroll automatique
+- ✅ Fixes robustesse nowcast (fallback gracieux)
+- ✅ Correction débordement WeatherInfo panel
 
 ### v2.1.0 (2025-11-15)
 - ✅ Système de nowcasting (prévisions minute par minute)
