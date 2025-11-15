@@ -13,6 +13,7 @@ import RealPrecipitationLayer from '../components/map/RealPrecipitationLayer';
 import RealWindLayer from '../components/map/RealWindLayer';
 import RealCloudLayer from '../components/map/RealCloudLayer';
 import RealPressureLayer from '../components/map/RealPressureLayer';
+import RealAirQualityLayer from '../components/map/RealAirQualityLayer';
 import FavoritesMarkers from '../components/map/FavoritesMarkers';
 import 'leaflet/dist/leaflet.css';
 
@@ -89,6 +90,7 @@ export default function MapPage() {
         <RealPrecipitationLayer />
         <RealWindLayer />
         <RealPressureLayer />
+        <RealAirQualityLayer />
 
         {/* Location search with autocomplete - Lazy loaded */}
         <Suspense fallback={<div />}>

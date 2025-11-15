@@ -78,6 +78,43 @@ function getAQIColor(aqi: number): string {
   return '#991b1b'; // Dark red
 }
 
+function getHealthRecommendation(aqi: number): { text: string; icon: string } {
+  if (aqi <= 20) {
+    return {
+      text: '✅ Excellente qualité de l\'air. Idéal pour toutes les activités en plein air.',
+      icon: '✅'
+    };
+  }
+  if (aqi <= 40) {
+    return {
+      text: '👍 Bonne qualité de l\'air. Les activités en plein air sont recommandées.',
+      icon: '👍'
+    };
+  }
+  if (aqi <= 60) {
+    return {
+      text: '⚠️ Qualité de l\'air modérée. Les groupes sensibles (enfants, personnes âgées) devraient réduire l\'activité intense.',
+      icon: '⚠️'
+    };
+  }
+  if (aqi <= 80) {
+    return {
+      text: '⚠️ Qualité de l\'air mauvaise. Les activités en plein air sont déconseillées pour les groupes sensibles.',
+      icon: '⚠️'
+    };
+  }
+  if (aqi <= 100) {
+    return {
+      text: '🚫 Très mauvaise qualité de l\'air. Tout le monde devrait réduire les activités en plein air.',
+      icon: '🚫'
+    };
+  }
+  return {
+    text: '🚨 Qualité de l\'air extrêmement mauvaise. Restez à l\'intérieur, si possible avec filtration de l\'air.',
+    icon: '🚨'
+  };
+}
+
 function getWeatherEmoji(weatherCode: number): string {
   if (weatherCode === 0) return '☀️';
   if (weatherCode <= 3) return '⛅';
@@ -125,10 +162,34 @@ const WeatherInfo = memo(function WeatherInfo() {
     setIsLoading(true);
     try {
       // Fetch weather and air quality in parallel
-      const [forecastData, airQualityData] = await Promise.all([
-        weatherCache.getForecast(selectedPoint.lat, selectedPoint.lon),
-        weatherCache.getAirQuality(selectedPoint.lat, selectedPoint.lon).catch(() => null), // Don't fail if air quality unavailable
-      ]);
+      let forecastData: ForecastResponse | null = null;
+      let airQualityData: AirQualityResponse | null = null;
+      let weatherError: Error | null = null;
+      let aqError: Error | null = null;
+
+      try {
+        forecastData = await weatherCache.getForecast(selectedPoint.lat, selectedPoint.lon);
+      } catch (error) {
+        console.error('Error fetching weather forecast:', error);
+        weatherError = error instanceof Error ? error : new Error('Failed to fetch weather');
+      }
+
+      try {
+        airQualityData = await weatherCache.getAirQuality(selectedPoint.lat, selectedPoint.lon);
+      } catch (error) {
+        console.warn('Error fetching air quality:', error);
+        aqError = error instanceof Error ? error : new Error('Failed to fetch air quality');
+        // Air quality is optional, don't fail completely
+      }
+
+      // If we couldn't fetch weather at all, we can't show anything
+      if (!forecastData) {
+        console.error('Failed to fetch weather data:', weatherError?.message);
+        setWeatherData(null);
+        setForecast(null);
+        setAirQuality(null);
+        return;
+      }
 
       const data = getWeatherAtTime(forecastData, selectedTime);
 
@@ -144,13 +205,16 @@ const WeatherInfo = memo(function WeatherInfo() {
           data.co = airData.co;
           data.aqi = airData.aqi;
         }
+      } else if (aqError) {
+        // Log air quality fetch failure but continue with weather data
+        console.warn('Air quality data unavailable, showing weather only:', aqError.message);
       }
 
       setWeatherData(data);
       setForecast(forecastData);
       setAirQuality(airQualityData);
     } catch (error) {
-      console.error('Error fetching weather:', error);
+      console.error('Unexpected error fetching weather:', error);
       setWeatherData(null);
       setForecast(null);
       setAirQuality(null);
@@ -608,7 +672,7 @@ const WeatherInfo = memo(function WeatherInfo() {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
+                    gridTemplateColumns: '1fr 1fr 1fr',
                     gap: '8px',
                   }}
                 >
@@ -670,6 +734,51 @@ const WeatherInfo = memo(function WeatherInfo() {
                       {weatherData.o3.toFixed(1)}
                     </div>
                     <div style={{ fontSize: '10px', color: '#9ca3af' }}>µg/m³</div>
+                  </div>
+
+                  {/* SO2 */}
+                  <div
+                    style={{
+                      padding: '10px',
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>SO₂</div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: isDark ? '#f1f5f9' : '#111827' }}>
+                      {weatherData.so2.toFixed(1)}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#9ca3af' }}>µg/m³</div>
+                  </div>
+
+                  {/* CO */}
+                  <div
+                    style={{
+                      padding: '10px',
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>CO</div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: isDark ? '#f1f5f9' : '#111827' }}>
+                      {weatherData.co.toFixed(1)}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#9ca3af' }}>µg/m³</div>
+                  </div>
+                </div>
+
+                {/* Health Recommendations */}
+                <div
+                  style={{
+                    marginTop: '12px',
+                    padding: '12px',
+                    backgroundColor: `${getAQIColor(weatherData.aqi)}20`,
+                    borderRadius: '10px',
+                    borderLeft: `3px solid ${getAQIColor(weatherData.aqi)}`,
+                  }}
+                >
+                  <div style={{ fontSize: '12px', color: isDark ? '#e0e7ff' : '#1e293b', fontWeight: '500', lineHeight: '1.5' }}>
+                    {getHealthRecommendation(weatherData.aqi).text}
                   </div>
                 </div>
               </div>

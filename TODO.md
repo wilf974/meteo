@@ -85,6 +85,7 @@ Application météorologique ultime pour professionnels avec carte interactive m
 - [x] Prévisions jusqu'à 16 jours
 - [x] Données horaires complètes
 - [x] Indices météo avancés (UV, ressenti, rosée, visibilité)
+- [x] Qualité de l'air (Open-Meteo Air Quality API)
 - [ ] Service de fallback entre sources
 - [ ] Intégration Meteomatics (optionnel)
 - [ ] Intégration Tomorrow.io (optionnel)
@@ -98,12 +99,12 @@ Application météorologique ultime pour professionnels avec carte interactive m
   - [x] Température
   - [x] Pression atmosphérique
   - [x] Nuages
+  - [x] Qualité de l'air (heatmap + affichage détails)
   - [ ] Vagues (maritime)
   - [ ] Orages et foudre
   - [ ] Pollen
   - [x] Humidité
   - [x] Neige (avec animations)
-  - [ ] Qualité de l'air (en cours)
 - [x] Contrôles de couches (toggle, opacité, ordre)
 - [x] Timeline et animation temporelle (16 jours)
 - [x] Zoom et navigation optimisés
@@ -191,12 +192,14 @@ Application météorologique ultime pour professionnels avec carte interactive m
 ## 🚀 Prochaines Priorités
 
 ### Court Terme (Sprint actuel)
-1. **Qualité de l'Air** 🌫️
-   - [ ] API Open-Meteo Air Quality
-   - [ ] Indices PM2.5, PM10, NO2, O3, SO2, CO
-   - [ ] Carte de pollution en temps réel
-   - [ ] Code couleur AQI international
-   - [ ] Recommandations santé
+1. **Qualité de l'Air** ✅ 🌫️ (COMPLÉTÉE - Nov 15, 2025)
+   - [x] API Open-Meteo Air Quality
+   - [x] Indices PM2.5, PM10, NO2, O3, SO2, CO
+   - [x] Carte de pollution en temps réel (heatmap interactive)
+   - [x] Code couleur AQI international
+   - [x] Recommandations santé basées sur AQI
+   - [x] Panneau détails avec 6 polluants affichés
+   - [x] Contrôle de couche + toggle/opacité
 
 2. **Prévisions Maritimes** ⛵
    - [ ] Hauteur et direction des vagues
@@ -271,8 +274,8 @@ Application météorologique ultime pour professionnels avec carte interactive m
 
 - **Phase 1**: ✅ 100% (Complété)
 - **Phase 2**: ✅ 100% (Complété)
-- **Phase 3**: ✅ 80% (Principal complété)
-- **Phase 4**: ✅ 85% (Carte + Couches principales)
+- **Phase 3**: ✅ 85% (Principal complété + Air Quality)
+- **Phase 4**: ✅ 90% (Carte + Couches + Air Quality Layer)
 - **Phase 5**: 🔜 0% (À démarrer)
 - **Phase 6**: 🚧 40% (WebSocket OK, reste à faire)
 - **Phase 7**: ✅ 70% (Base complète)
@@ -282,7 +285,7 @@ Application météorologique ultime pour professionnels avec carte interactive m
 - **Phase 11**: 🚧 15% (PWA)
 - **Phase 12**: 🚧 40% (Déploiement OK)
 
-**Progression globale**: **~55%** 🎯
+**Progression globale**: **~58%** 🎯 (+3% avec Air Quality complète)
 
 ## 🎨 Principes de Design
 
