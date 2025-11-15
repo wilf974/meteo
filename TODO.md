@@ -226,8 +226,16 @@ Application météorologique ultime pour professionnels avec carte interactive m
    - [x] Points animés avec pulsing effect
    - [x] Caching 10 secondes pour perf
    - [x] Toggle couche Lightning dans controls
-   - [ ] Alertes orageuses automatiques
+   - [x] Alertes orageuses automatiques (lightning + nowcast)
    - [ ] Heatmap densité éclairs
+
+6. **Alertes Orageuses Intelligentes** ✅ ⛈️ (COMPLÉTÉE - Nov 15, 2025)
+   - [x] Détection combinée (éclairs + nowcast pluie)
+   - [x] Scoring sévérité 4 niveaux (low/moderate/high/critical)
+   - [x] UI indicator top-right avec pulse animation
+   - [x] Messages personnalisés contexte/distance
+   - [x] Refresh temps réel 10s
+   - [x] Dark/light mode compatible
 
 ### Moyen Terme
 1. **Comparateur Multi-Lieux** 🗺️
@@ -302,7 +310,7 @@ Application météorologique ultime pour professionnels avec carte interactive m
 - **Phase 11**: 🚧 15% (PWA)
 - **Phase 12**: 🚧 40% (Déploiement OK)
 
-**Progression globale**: **~62%** 🎯 (+1% avec Détection Éclairs complétée)
+**Progression globale**: **~63%** 🎯 (+1% avec Alertes Orageuses complétées)
 
 ## 🎨 Principes de Design
 
@@ -346,10 +354,17 @@ Ces fonctionnalités sont **normalement payantes** chez la concurrence:
 
 **Date de création**: 2025-11-10
 **Dernière mise à jour**: 2025-11-15
-**Version**: 2.3.0 (Lightning Detection Ready)
+**Version**: 2.4.0 (Storm Alerts Ready)
 **Statut**: ✅ En production - Améliorations continues
 
 ## 📝 Changelog Récent
+
+### v2.4.0 (2025-11-15)
+- ✅ Alertes orageuses combinant éclairs + nowcast
+- ✅ Scoring sévérité multi-critères (low/moderate/high/critical)
+- ✅ UI indicator top-right avec animations
+- ✅ Refresh temps réel 10 secondes
+- ✅ Messages personnalisés contexte/distance
 
 ### v2.3.0 (2025-11-15)
 - ✅ Détection d'éclairs en temps réel (Blitzortung API)
