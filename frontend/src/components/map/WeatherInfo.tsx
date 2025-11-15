@@ -7,6 +7,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { X, Thermometer, Wind, Droplets, Gauge, Cloud, Compass, Eye, Star, TrendingUp, Sun, CloudRain, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { NowcastPanel } from './NowcastPanel';
+import { DailyForecastPanel } from './DailyForecastPanel';
 
 // Lazy load the chart component to reduce initial bundle size
 const WeatherChart = lazy(() => import('./WeatherChart'));
@@ -518,6 +519,9 @@ const WeatherInfo = memo(function WeatherInfo() {
 
             {/* Nowcast Panel - Next 15 minutes alert */}
             <NowcastPanel nowcast={nowcast} isDark={isDark} />
+
+            {/* Daily Forecast Summary */}
+            <DailyForecastPanel forecast={forecast} isDark={isDark} />
 
             {/* Premium Features Section */}
             <div
