@@ -220,6 +220,15 @@ Application météorologique ultime pour professionnels avec carte interactive m
    - [x] Intégration WeatherInfo
    - [ ] Sélection jour pour voir détails horaires
 
+5. **Détection Éclairs** ✅ ⚡️ (COMPLÉTÉE - Nov 15, 2025)
+   - [x] API Blitzortung intégrée (Free Lightning Network)
+   - [x] Visualisation temps réel sur carte
+   - [x] Points animés avec pulsing effect
+   - [x] Caching 10 secondes pour perf
+   - [x] Toggle couche Lightning dans controls
+   - [ ] Alertes orageuses automatiques
+   - [ ] Heatmap densité éclairs
+
 ### Moyen Terme
 1. **Comparateur Multi-Lieux** 🗺️
    - [ ] Comparer 2-4 endroits côte à côte
@@ -293,7 +302,7 @@ Application météorologique ultime pour professionnels avec carte interactive m
 - **Phase 11**: 🚧 15% (PWA)
 - **Phase 12**: 🚧 40% (Déploiement OK)
 
-**Progression globale**: **~61%** 🎯 (+1% avec Prévisions 7 jours complétées)
+**Progression globale**: **~62%** 🎯 (+1% avec Détection Éclairs complétée)
 
 ## 🎨 Principes de Design
 
@@ -337,10 +346,17 @@ Ces fonctionnalités sont **normalement payantes** chez la concurrence:
 
 **Date de création**: 2025-11-10
 **Dernière mise à jour**: 2025-11-15
-**Version**: 2.2.0 (Daily Forecast Ready)
+**Version**: 2.3.0 (Lightning Detection Ready)
 **Statut**: ✅ En production - Améliorations continues
 
 ## 📝 Changelog Récent
+
+### v2.3.0 (2025-11-15)
+- ✅ Détection d'éclairs en temps réel (Blitzortung API)
+- ✅ Visualisation points animés sur carte
+- ✅ Pulsing animation avec fade-out progressif
+- ✅ Cache court (10s) pour données temps réel
+- ✅ Caching intelligent avec déduplication
 
 ### v2.2.0 (2025-11-15)
 - ✅ Panneau prévisions 7 jours avec résumés quotidiens
