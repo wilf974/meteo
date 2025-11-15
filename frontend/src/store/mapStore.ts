@@ -34,6 +34,7 @@ export const useMapStore = create<MapState>((set) => ({
     { id: 'clouds', name: 'Nuages', type: 'overlay', enabled: true, opacity: 0.5, order: 4 },
     { id: 'pressure', name: 'Pression', type: 'heatmap', enabled: false, opacity: 0.6, order: 5 },
     { id: 'airquality', name: 'Qualité de l\'air', type: 'heatmap', enabled: false, opacity: 0.6, order: 6 },
+    { id: 'lightning', name: '⚡ Éclairs', type: 'points', enabled: false, opacity: 0.8, order: 7 },
   ],
   center: [46.603354, 1.888334], // Centre de la France
   zoom: 6,

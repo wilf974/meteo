@@ -1,4 +1,5 @@
 import { getForecast, getAirQuality, getNowcast, type ForecastResponse, type AirQualityResponse, type NowcastResponse } from './openMeteo.service';
+import { getLightningStrikes, type LightningStrike } from './lightning.service';
 
 interface CacheEntry {
   forecast: ForecastResponse;
@@ -18,6 +19,12 @@ interface NowcastCacheEntry {
   hits: number;
 }
 
+interface LightningCacheEntry {
+  strikes: LightningStrike[];
+  timestamp: number;
+  hits: number;
+}
+
 interface CacheStats {
   size: number;
   pending: number;
@@ -30,15 +37,19 @@ class WeatherCacheService {
   private cache = new Map<string, CacheEntry>();
   private airQualityCache = new Map<string, AirQualityCacheEntry>();
   private nowcastCache = new Map<string, NowcastCacheEntry>();
+  private lightningCache = new Map<string, LightningCacheEntry>();
   private CACHE_DURATION = 10 * 60 * 1000; // 10 minutes (increased from 5)
   private NOWCAST_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes for nowcast (frequent updates)
+  private LIGHTNING_CACHE_DURATION = 10 * 1000; // 10 seconds for lightning (real-time)
   private MAX_CACHE_SIZE = 1000; // Maximum cache entries
   private pendingRequests = new Map<string, Promise<ForecastResponse>>();
   private pendingAirQualityRequests = new Map<string, Promise<AirQualityResponse>>();
   private pendingNowcastRequests = new Map<string, Promise<NowcastResponse>>();
+  private pendingLightningRequests = new Map<string, Promise<LightningStrike[]>>();
   private stats = { hits: 0, misses: 0 };
   private airQualityStats = { hits: 0, misses: 0 };
   private nowcastStats = { hits: 0, misses: 0 };
+  private lightningStats = { hits: 0, misses: 0 };
 
   constructor() {
     // Auto-cleanup every 5 minutes
@@ -46,6 +57,7 @@ class WeatherCacheService {
       this.cleanupExpiredCache();
       this.cleanupExpiredAirQualityCache();
       this.cleanupExpiredNowcastCache();
+      this.cleanupExpiredLightningCache();
     }, 5 * 60 * 1000);
   }
 
@@ -204,6 +216,63 @@ class WeatherCacheService {
     }
   }
 
+  private cleanupExpiredLightningCache() {
+    const now = Date.now();
+    let cleaned = 0;
+
+    for (const [key, entry] of this.lightningCache.entries()) {
+      if (now - entry.timestamp > this.LIGHTNING_CACHE_DURATION) {
+        this.lightningCache.delete(key);
+        cleaned++;
+      }
+    }
+
+    if (cleaned > 0) {
+      console.log(`⚡ Cleaned ${cleaned} expired lightning cache entries`);
+    }
+  }
+
+  async getLightning(minLat: number, maxLat: number, minLon: number, maxLon: number): Promise<LightningStrike[]> {
+    // Create cache key from bounding box
+    const key = `${minLat.toFixed(2)},${maxLat.toFixed(2)},${minLon.toFixed(2)},${maxLon.toFixed(2)}`;
+    const now = Date.now();
+
+    // Check cache (very short TTL - 10 seconds)
+    const cached = this.lightningCache.get(key);
+    if (cached && (now - cached.timestamp) < this.LIGHTNING_CACHE_DURATION) {
+      this.lightningStats.hits++;
+      cached.hits++;
+      console.log(`⚡ Lightning cache hit for bbox (${cached.hits} hits)`);
+      return cached.strikes;
+    }
+
+    // Check if there's already a pending request
+    const pending = this.pendingLightningRequests.get(key);
+    if (pending) {
+      console.log(`⏳ Reusing pending lightning request for bbox`);
+      return pending;
+    }
+
+    // Make new request
+    this.lightningStats.misses++;
+    console.log(`⚡ Lightning cache miss, fetching bbox`);
+
+    const request = getLightningStrikes(minLat, maxLat, minLon, maxLon)
+      .then(strikes => {
+        this.lightningCache.set(key, { strikes, timestamp: now, hits: 0 });
+        this.pendingLightningRequests.delete(key);
+        return strikes;
+      })
+      .catch(error => {
+        this.pendingLightningRequests.delete(key);
+        console.error('Error fetching lightning:', error);
+        return []; // Return empty array on error
+      });
+
+    this.pendingLightningRequests.set(key, request);
+    return request;
+  }
+
   async getAirQuality(lat: number, lon: number, prefetch: boolean = false): Promise<AirQualityResponse> {
     const key = this.getCacheKey(lat, lon);
     const now = Date.now();
@@ -292,10 +361,12 @@ class WeatherCacheService {
     this.cache.clear();
     this.airQualityCache.clear();
     this.nowcastCache.clear();
+    this.lightningCache.clear();
     this.stats = { hits: 0, misses: 0 };
     this.airQualityStats = { hits: 0, misses: 0 };
     this.nowcastStats = { hits: 0, misses: 0 };
-    console.log('🗑️ Weather, air quality, and nowcast cache cleared');
+    this.lightningStats = { hits: 0, misses: 0 };
+    console.log('🗑️ Weather, air quality, nowcast, and lightning cache cleared');
   }
 
   getCacheStats(): CacheStats {

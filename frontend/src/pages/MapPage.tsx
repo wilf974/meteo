@@ -14,6 +14,7 @@ import RealWindLayer from '../components/map/RealWindLayer';
 import RealCloudLayer from '../components/map/RealCloudLayer';
 import RealPressureLayer from '../components/map/RealPressureLayer';
 import RealAirQualityLayer from '../components/map/RealAirQualityLayer';
+import RealLightningLayer from '../components/map/RealLightningLayer';
 import FavoritesMarkers from '../components/map/FavoritesMarkers';
 import 'leaflet/dist/leaflet.css';
 
@@ -91,6 +92,7 @@ export default function MapPage() {
         <RealWindLayer />
         <RealPressureLayer />
         <RealAirQualityLayer />
+        <RealLightningLayer />
 
         {/* Location search with autocomplete - Lazy loaded */}
         <Suspense fallback={<div />}>
