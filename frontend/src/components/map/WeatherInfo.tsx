@@ -226,7 +226,11 @@ const WeatherInfo = memo(function WeatherInfo() {
       // Merge nowcast data if available
       let nowcastDataAtTime: NowcastData | null = null;
       if (nowcastData) {
-        nowcastDataAtTime = getNowcastAtTime(nowcastData, selectedTime);
+        try {
+          nowcastDataAtTime = getNowcastAtTime(nowcastData, selectedTime);
+        } catch (error) {
+          console.warn('Error processing nowcast data:', error);
+        }
       } else if (nowcastError) {
         console.warn('Nowcast data unavailable:', nowcastError.message);
       }
@@ -290,8 +294,8 @@ const WeatherInfo = memo(function WeatherInfo() {
         border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
         width: window.innerWidth < 768 ? 'calc(100vw - 24px)' : '340px',
         maxWidth: window.innerWidth < 768 ? '480px' : '340px',
-        maxHeight: window.innerWidth < 768 ? 'calc(100vh - 180px)' : 'none',
-        overflowY: window.innerWidth < 768 ? 'auto' : 'visible',
+        maxHeight: 'calc(100vh - 180px)',
+        overflowY: 'auto',
       }}
     >
       {/* Header */}

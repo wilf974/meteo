@@ -307,6 +307,9 @@ export async function getGridForecast(
  * Récupère les prévisions minute par minute (Nowcasting) pour une position donnée
  * Données disponibles: 96 minutes (~1.6 heures)
  * Résolution: 10 minutes
+ *
+ * Note: Cette fonction utilise l'API Free Open-Meteo qui support minutely_10
+ * Voir: https://open-meteo.com/en/docs#minutely
  */
 export async function getNowcast(
   latitude: number,
@@ -318,16 +321,31 @@ export async function getNowcast(
       longitude: longitude.toString(),
       minutely_10: 'precipitation',
       timezone: 'auto',
-      forecast_minutes: '96', // ~1.6 hours
+      forecast_days: '1', // Just today
     });
 
-    console.log('⚡ Fetching Nowcast:', `${BASE_URL}/forecast?${params}`);
-    const response = await axios.get<NowcastResponse>(`${BASE_URL}/forecast?${params}`);
+    const url = `${BASE_URL}/forecast?${params}`;
+    console.log('⚡ Fetching Nowcast from Open-Meteo:', url);
+
+    const response = await axios.get<NowcastResponse>(url, {
+      timeout: 5000 // 5 second timeout to not block weather
+    });
+
     console.log('✅ Nowcast data received:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ Nowcast fetch error:', error);
-    throw error;
+    console.error('❌ Nowcast fetch error:', error instanceof Error ? error.message : error);
+    // Return a minimal response structure instead of throwing
+    // This allows weather to still display even if nowcast fails
+    return {
+      latitude,
+      longitude,
+      minutely_10: {
+        time: [],
+        precipitation: []
+      },
+      timezone: 'UTC'
+    };
   }
 }
 
@@ -338,6 +356,11 @@ export function getNowcastAtTime(
   nowcast: NowcastResponse,
   targetTime: Date
 ): NowcastData | null {
+  // Return null if no nowcast data available
+  if (!nowcast.minutely_10.time || nowcast.minutely_10.time.length === 0) {
+    return null;
+  }
+
   const targetTimestamp = targetTime.getTime();
 
   // Trouver l'index du créneau de 10 minutes le plus proche
