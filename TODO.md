@@ -207,9 +207,10 @@ Application météorologique ultime pour professionnels avec carte interactive m
    - [ ] Température de l'eau
    - [ ] Courants marins
 
-3. **Nowcasting** ⚡
-   - [ ] Prévisions minute par minute (0-2h)
-   - [ ] "Il va pleuvoir dans X minutes"
+3. **Nowcasting** ✅ ⚡ (COMPLÉTÉE - Nov 15, 2025)
+   - [x] Prévisions minute par minute (0-2h)
+   - [x] "Il va pleuvoir dans X minutes" (15 min preview)
+   - [x] Système d'alertes nowcast (email + navigateur)
    - [ ] Radar précipitations avec trajectoire
 
 ### Moyen Terme
@@ -285,7 +286,7 @@ Application météorologique ultime pour professionnels avec carte interactive m
 - **Phase 11**: 🚧 15% (PWA)
 - **Phase 12**: 🚧 40% (Déploiement OK)
 
-**Progression globale**: **~58%** 🎯 (+3% avec Air Quality complète)
+**Progression globale**: **~60%** 🎯 (+2% avec Nowcasting complète)
 
 ## 🎨 Principes de Design
 
@@ -328,11 +329,17 @@ Ces fonctionnalités sont **normalement payantes** chez la concurrence:
 ---
 
 **Date de création**: 2025-11-10
-**Dernière mise à jour**: 2025-11-13
-**Version**: 2.0.0
+**Dernière mise à jour**: 2025-11-15
+**Version**: 2.1.0 (Nowcasting Ready)
 **Statut**: ✅ En production - Améliorations continues
 
 ## 📝 Changelog Récent
+
+### v2.1.0 (2025-11-15)
+- ✅ Système de nowcasting (prévisions minute par minute)
+- ✅ Panel nowcast avec alertes pluie imminente (15 min)
+- ✅ Alertes email et navigateur pour nowcast
+- ✅ Caching nowcast avec déduplication
 
 ### v2.0.0 (2025-11-13)
 - ✅ Ajout indices météo premium (UV, ressenti, rosée, visibilité)
