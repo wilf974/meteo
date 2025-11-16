@@ -1,5 +1,6 @@
 import { getForecast, getAirQuality, getNowcast, type ForecastResponse, type AirQualityResponse, type NowcastResponse } from './openMeteo.service';
 import { getLightningStrikes, type LightningStrike } from './lightning.service';
+import { getMarineForecast, type MarineResponse } from './marineForecast.service';
 
 interface CacheEntry {
   forecast: ForecastResponse;
@@ -25,6 +26,12 @@ interface LightningCacheEntry {
   hits: number;
 }
 
+interface MarineCacheEntry {
+  marine: MarineResponse;
+  timestamp: number;
+  hits: number;
+}
+
 interface CacheStats {
   size: number;
   pending: number;
@@ -38,18 +45,22 @@ class WeatherCacheService {
   private airQualityCache = new Map<string, AirQualityCacheEntry>();
   private nowcastCache = new Map<string, NowcastCacheEntry>();
   private lightningCache = new Map<string, LightningCacheEntry>();
+  private marineCache = new Map<string, MarineCacheEntry>();
   private CACHE_DURATION = 10 * 60 * 1000; // 10 minutes (increased from 5)
   private NOWCAST_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes for nowcast (frequent updates)
   private LIGHTNING_CACHE_DURATION = 10 * 1000; // 10 seconds for lightning (real-time)
+  private MARINE_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes for marine (slower changing data)
   private MAX_CACHE_SIZE = 1000; // Maximum cache entries
   private pendingRequests = new Map<string, Promise<ForecastResponse>>();
   private pendingAirQualityRequests = new Map<string, Promise<AirQualityResponse>>();
   private pendingNowcastRequests = new Map<string, Promise<NowcastResponse>>();
   private pendingLightningRequests = new Map<string, Promise<LightningStrike[]>>();
+  private pendingMarineRequests = new Map<string, Promise<MarineResponse>>();
   private stats = { hits: 0, misses: 0 };
   private airQualityStats = { hits: 0, misses: 0 };
   private nowcastStats = { hits: 0, misses: 0 };
   private lightningStats = { hits: 0, misses: 0 };
+  private marineStats = { hits: 0, misses: 0 };
 
   constructor() {
     // Auto-cleanup every 5 minutes
@@ -58,6 +69,7 @@ class WeatherCacheService {
       this.cleanupExpiredAirQualityCache();
       this.cleanupExpiredNowcastCache();
       this.cleanupExpiredLightningCache();
+      this.cleanupExpiredMarineCache();
     }, 5 * 60 * 1000);
   }
 
@@ -232,6 +244,22 @@ class WeatherCacheService {
     }
   }
 
+  private cleanupExpiredMarineCache() {
+    const now = Date.now();
+    let cleaned = 0;
+
+    for (const [key, entry] of this.marineCache.entries()) {
+      if (now - entry.timestamp > this.MARINE_CACHE_DURATION) {
+        this.marineCache.delete(key);
+        cleaned++;
+      }
+    }
+
+    if (cleaned > 0) {
+      console.log(`🌊 Cleaned ${cleaned} expired marine cache entries`);
+    }
+  }
+
   async getLightning(minLat: number, maxLat: number, minLon: number, maxLon: number): Promise<LightningStrike[]> {
     // Create cache key from bounding box
     const key = `${minLat.toFixed(2)},${maxLat.toFixed(2)},${minLon.toFixed(2)},${maxLon.toFixed(2)}`;
@@ -357,16 +385,58 @@ class WeatherCacheService {
     return request;
   }
 
+  async getMarineForecast(lat: number, lon: number): Promise<MarineResponse> {
+    const key = this.getCacheKey(lat, lon);
+    const now = Date.now();
+
+    // Check cache
+    const cached = this.marineCache.get(key);
+    if (cached && (now - cached.timestamp) < this.MARINE_CACHE_DURATION) {
+      this.marineStats.hits++;
+      cached.hits++;
+      console.log(`🌊 Marine forecast cache hit for ${key} (${cached.hits} hits)`);
+      return cached.marine;
+    }
+
+    // Check if there's already a pending request for this location
+    const pending = this.pendingMarineRequests.get(key);
+    if (pending) {
+      console.log(`⏳ Reusing pending marine forecast request for ${key}`);
+      return pending;
+    }
+
+    // Make new request
+    this.marineStats.misses++;
+    console.log(`🌊 Marine forecast cache miss, fetching ${key}`);
+
+    const request = getMarineForecast(lat, lon)
+      .then(marine => {
+        this.marineCache.set(key, { marine, timestamp: now, hits: 0 });
+        this.pendingMarineRequests.delete(key);
+        return marine;
+      })
+      .catch(error => {
+        this.pendingMarineRequests.delete(key);
+        console.error('Error fetching marine forecast:', error);
+        throw error;
+      });
+
+    this.pendingMarineRequests.set(key, request);
+    return request;
+  }
+
   clearCache() {
     this.cache.clear();
     this.airQualityCache.clear();
     this.nowcastCache.clear();
     this.lightningCache.clear();
+    this.marineCache.clear();
     this.stats = { hits: 0, misses: 0 };
     this.airQualityStats = { hits: 0, misses: 0 };
     this.nowcastStats = { hits: 0, misses: 0 };
     this.lightningStats = { hits: 0, misses: 0 };
-    console.log('🗑️ Weather, air quality, nowcast, and lightning cache cleared');
+    this.marineStats = { hits: 0, misses: 0 };
+    console.log('🗑️ Weather, air quality, nowcast, lightning, and marine cache cleared');
   }
 
   getCacheStats(): CacheStats {

@@ -2,12 +2,14 @@ import { useEffect, useState, memo, useCallback, useMemo, lazy, Suspense } from 
 import { useWeatherInfoState } from '../../store/mapSelectors';
 import { weatherCache } from '../../services/weatherCache.service';
 import { getWeatherAtTime, getAirQualityAtTime, getNowcastAtTime, type WeatherData, type ForecastResponse, type AirQualityResponse, type NowcastResponse, type NowcastData } from '../../services/openMeteo.service';
+import { getMarineAtTime, type MarineData, type MarineResponse } from '../../services/marineForecast.service';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { useThemeStore } from '../../store/themeStore';
 import { X, Thermometer, Wind, Droplets, Gauge, Cloud, Compass, Eye, Star, TrendingUp, Sun, CloudRain, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { NowcastPanel } from './NowcastPanel';
 import { DailyForecastPanel } from './DailyForecastPanel';
+import { MarineInfoPanel } from '../weather/MarineInfoPanel';
 
 // Lazy load the chart component to reduce initial bundle size
 const WeatherChart = lazy(() => import('./WeatherChart'));
@@ -137,6 +139,7 @@ const WeatherInfo = memo(function WeatherInfo() {
   const [forecast, setForecast] = useState<ForecastResponse | null>(null);
   const [airQuality, setAirQuality] = useState<AirQualityResponse | null>(null);
   const [nowcast, setNowcast] = useState<NowcastData | null>(null);
+  const [marine, setMarine] = useState<MarineData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showChart, setShowChart] = useState(false);
 
@@ -164,13 +167,15 @@ const WeatherInfo = memo(function WeatherInfo() {
 
     setIsLoading(true);
     try {
-      // Fetch weather, air quality, and nowcast in parallel
+      // Fetch weather, air quality, nowcast, and marine data in parallel
       let forecastData: ForecastResponse | null = null;
       let airQualityData: AirQualityResponse | null = null;
       let nowcastData: NowcastResponse | null = null;
+      let marineData: MarineResponse | null = null;
       let weatherError: Error | null = null;
       let aqError: Error | null = null;
       let nowcastError: Error | null = null;
+      let marineError: Error | null = null;
 
       try {
         forecastData = await weatherCache.getForecast(selectedPoint.lat, selectedPoint.lon);
@@ -195,6 +200,14 @@ const WeatherInfo = memo(function WeatherInfo() {
         // Nowcast is optional, don't fail completely
       }
 
+      try {
+        marineData = await weatherCache.getMarineForecast(selectedPoint.lat, selectedPoint.lon);
+      } catch (error) {
+        console.warn('Error fetching marine forecast:', error);
+        marineError = error instanceof Error ? error : new Error('Failed to fetch marine forecast');
+        // Marine forecast is optional, don't fail completely
+      }
+
       // If we couldn't fetch weather at all, we can't show anything
       if (!forecastData) {
         console.error('Failed to fetch weather data:', weatherError?.message);
@@ -202,6 +215,7 @@ const WeatherInfo = memo(function WeatherInfo() {
         setForecast(null);
         setAirQuality(null);
         setNowcast(null);
+        setMarine(null);
         return;
       }
 
@@ -236,16 +250,30 @@ const WeatherInfo = memo(function WeatherInfo() {
         console.warn('Nowcast data unavailable:', nowcastError.message);
       }
 
+      // Merge marine data if available
+      let marineDataAtTime: MarineData | null = null;
+      if (marineData) {
+        try {
+          marineDataAtTime = getMarineAtTime(marineData, selectedTime);
+        } catch (error) {
+          console.warn('Error processing marine data:', error);
+        }
+      } else if (marineError) {
+        console.warn('Marine data unavailable:', marineError.message);
+      }
+
       setWeatherData(data);
       setForecast(forecastData);
       setAirQuality(airQualityData);
       setNowcast(nowcastDataAtTime);
+      setMarine(marineDataAtTime);
     } catch (error) {
       console.error('Unexpected error fetching weather:', error);
       setWeatherData(null);
       setForecast(null);
       setAirQuality(null);
       setNowcast(null);
+      setMarine(null);
     } finally {
       setIsLoading(false);
     }
@@ -522,6 +550,9 @@ const WeatherInfo = memo(function WeatherInfo() {
 
             {/* Daily Forecast Summary */}
             <DailyForecastPanel forecast={forecast} isDark={isDark} />
+
+            {/* Marine Forecast */}
+            <MarineInfoPanel marine={marine} isDark={isDark} />
 
             {/* Premium Features Section */}
             <div
