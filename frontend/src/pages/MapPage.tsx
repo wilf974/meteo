@@ -3,6 +3,8 @@ import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
 import { useMapStore } from '../store/mapStore';
 import { useSetCenter, useSetZoom, useSetSelectedPoint } from '../store/mapSelectors';
 import { useAuthStore } from '../store/authStore';
+import { useComparisonStore } from '../store/comparisonStore';
+import { useThemeStore } from '../store/themeStore';
 import { socketService } from '../lib/socket';
 import { useGeolocation } from '../hooks/useGeolocation';
 import LayerControl from '../components/map/LayerControl';
@@ -24,6 +26,7 @@ const MapLegend = lazy(() => import('../components/map/MapLegend'));
 const FavoritesPanel = lazy(() => import('../components/FavoritesPanel'));
 const GeolocationPrompt = lazy(() => import('../components/map/GeolocationPrompt'));
 const StormAlertManager = lazy(() => import('../components/map/StormAlertManager'));
+const MultiLocationComparisonPanel = lazy(() => import('../components/weather/MultiLocationComparisonPanel'));
 
 const MapEvents = memo(function MapEvents() {
   const setCenter = useSetCenter();
@@ -51,6 +54,8 @@ export default function MapPage() {
   const { token } = useAuthStore();
   const setSelectedPoint = useSetSelectedPoint();
   const { coords: geolocationCoords } = useGeolocation();
+  const { addComparisonLocation, setComparisonMode, isComparisonMode } = useComparisonStore();
+  const { effectiveTheme } = useThemeStore();
 
   // Auto-select user's location when geolocation is available
   useEffect(() => {
@@ -72,6 +77,11 @@ export default function MapPage() {
       };
     }
   }, [token]);
+
+  const handleAddLocationToComparison = () => {
+    // This will be called from FavoritesPanel to add selected favorites
+    // The button in MultiLocationComparisonPanel will also trigger this
+  };
 
   return (
     <div className="relative h-full w-full">
@@ -128,6 +138,11 @@ export default function MapPage() {
       {/* Storm Alert Manager - Lazy loaded */}
       <Suspense fallback={<div />}>
         <StormAlertManager />
+      </Suspense>
+
+      {/* Multi-Location Comparison Panel - Lazy loaded */}
+      <Suspense fallback={<div />}>
+        <MultiLocationComparisonPanel isDark={effectiveTheme === 'dark'} onAddLocation={handleAddLocationToComparison} />
       </Suspense>
     </div>
   );
