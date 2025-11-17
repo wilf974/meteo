@@ -30,8 +30,8 @@ export default function RealCloudLayer() {
       try {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
-        // Increased grid density for better visibility (8-10 points for professional look)
-        const gridSize = zoom > 10 ? 10 : zoom > 7 ? 8 : 7;
+        // Dense grid for smooth interpolation (12-15 points for professional look)
+        const gridSize = zoom > 10 ? 15 : zoom > 7 ? 12 : 10;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -122,11 +122,11 @@ export default function RealCloudLayer() {
 
         const cloudCover = weatherData.cloudCover / 100; // 0-1
 
-        // LARGER zones for professional cloud display
-        const zoneSize = 450;
+        // Large zones for smooth cloud display
+        const zoneSize = 500;
 
-        // MUCH MORE VISIBLE opacity like professional maps (0.35-0.65 range)
-        const baseAlpha = 0.35 + (Math.pow(cloudCover, 0.9) * 0.3); // Range 0.35-0.65
+        // SUBTLE opacity like professional maps (0.15-0.40 range)
+        const baseAlpha = 0.15 + (Math.pow(cloudCover, 0.9) * 0.25); // Range 0.15-0.40
         const alpha = baseAlpha * opacity;
 
         const gradient = ctx.createRadialGradient(

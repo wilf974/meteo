@@ -42,8 +42,8 @@ export default function RealPrecipitationLayer() {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
 
-        // Increased grid density for better visibility (8-10 points for professional look)
-        const gridSize = zoom > 10 ? 10 : zoom > 7 ? 8 : 7;
+        // Dense grid for smooth interpolation (12-15 points for professional look)
+        const gridSize = zoom > 10 ? 15 : zoom > 7 ? 12 : 10;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -128,113 +128,97 @@ export default function RealPrecipitationLayer() {
 
       const selectedTime = new Date(timelinePosition);
 
-      // Count precipitation zones
-      let precipCount = 0;
-
-      // Use 'source-over' for direct rendering with better visibility
+      // Use source-over for direct rendering
       ctx.globalCompositeOperation = 'source-over';
 
-      // Draw precipitation zones using grid data
-      gridDataRef.current.forEach((point) => {
-        if (!point.forecast) return;
+      // Draw precipitation with SMOOTH gradient across entire canvas
+      const gridSize = Math.sqrt(gridDataRef.current.length) - 1;
+      const cellWidth = canvas.width / gridSize;
+      const cellHeight = canvas.height / gridSize;
 
-        const weatherData = getWeatherAtTime(point.forecast, selectedTime);
-        if (!weatherData) return;
+      // Draw each grid cell with bilinear interpolation
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          const idx = i * (gridSize + 1) + j;
+          const point = gridDataRef.current[idx];
 
-        // Calculate TOTAL precipitation from all sources
-        const totalPrecip = weatherData.precipitation + weatherData.rain + weatherData.showers;
-        const hasSnow = weatherData.snowfall > 0;
+          if (!point || !point.forecast) continue;
 
-        if (totalPrecip > 0 || hasSnow) {
-          precipCount++;
-        }
+          const weatherData = getWeatherAtTime(point.forecast, selectedTime);
+          if (!weatherData) continue;
 
-        if (totalPrecip === 0 && !hasSnow) return;
+          const totalPrecip = weatherData.precipitation + weatherData.rain + weatherData.showers;
+          const hasSnow = weatherData.snowfall > 0;
 
-        // Convert lat/lon to screen coordinates
-        const latLng = { lat: point.lat, lng: point.lon };
-        const screenPoint = map.latLngToContainerPoint(latLng);
+          if (totalPrecip === 0 && !hasSnow) continue;
 
-        // Calculate precipitation intensity with exponential curve for better visualization
-        const precip = totalPrecip;
-        const intensity = Math.min(Math.pow(precip / 10, 0.7), 1); // Exponential curve for smoother gradation
+          // Get screen position
+          const latLng = { lat: point.lat, lng: point.lon };
+          const screenPoint = map.latLngToContainerPoint(latLng);
 
-        // LARGER zones for professional weather map look (like Windy)
-        const zoneSize = 450;
+          // Draw smooth gradient in ALL directions (not just radial)
+          const precip = totalPrecip;
 
-        // MUCH MORE VISIBLE opacity like professional maps (0.5-0.85 range)
-        const baseAlpha = 0.5 + (intensity * 0.35); // Range 0.5-0.85 for professional visibility
-        const alpha = baseAlpha * opacity;
+          // Determine color based on intensity - SUBTLE like pro maps
+          let r, g, b;
+          if (precip < 0.5) {
+            // Very light rain - Very light blue
+            r = 180; g = 220; b = 255;
+          } else if (precip < 2) {
+            // Light rain - Light blue
+            r = 120; g = 180; b = 255;
+          } else if (precip < 5) {
+            // Moderate rain - Medium blue
+            r = 60; g = 140; b = 240;
+          } else if (precip < 10) {
+            // Heavy rain - Strong blue
+            r = 20; g = 100; b = 200;
+          } else {
+            // Very heavy rain - Deep blue
+            r = 0; g = 60; b = 160;
+          }
 
-        // Create very smooth gradient with wider falloff
-        const gradient = ctx.createRadialGradient(
-          screenPoint.x, screenPoint.y, 0,
-          screenPoint.x, screenPoint.y, zoneSize
-        );
+          // SUBTLE opacity (0.2-0.5 range) like professional maps
+          const intensity = Math.min(precip / 15, 1);
+          const alpha = (0.2 + intensity * 0.3) * opacity;
 
-        // Determine color based on intensity - VIVID colors like pro weather maps
-        let r, g, b;
-        if (precip < 1) {
-          // Light rain - Bright cyan/light blue (like Windy)
-          r = 100; g = 200; b = 255;
-        } else if (precip < 3) {
-          // Moderate rain - Medium blue
-          r = 50; g = 150; b = 255;
-        } else if (precip < 7) {
-          // Heavy rain - Strong blue
-          r = 0; g = 100; b = 230;
-        } else {
-          // Very heavy rain - Deep blue/purple
-          r = 0; g = 50; b = 180;
-        }
+          // Large smooth gradient for natural look
+          const gradient = ctx.createRadialGradient(
+            screenPoint.x, screenPoint.y, 0,
+            screenPoint.x, screenPoint.y, cellWidth * 2.5
+          );
 
-        // Professional gradient with clear zone boundaries
-        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
-        gradient.addColorStop(0.25, `rgba(${r}, ${g}, ${b}, ${alpha * 0.85})`);
-        gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.6})`);
-        gradient.addColorStop(0.75, `rgba(${r}, ${g}, ${b}, ${alpha * 0.3})`);
-        gradient.addColorStop(0.9, `rgba(${r}, ${g}, ${b}, ${alpha * 0.1})`);
-        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+          gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
+          gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.6})`);
+          gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
 
-        ctx.fillStyle = gradient;
-        ctx.fillRect(
-          screenPoint.x - zoneSize,
-          screenPoint.y - zoneSize,
-          zoneSize * 2,
-          zoneSize * 2
-        );
-
-        // Add contour/border for better zone definition (like professional maps)
-        if (precip > 1) {
-          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.4})`;
-          ctx.lineWidth = 2;
+          ctx.fillStyle = gradient;
           ctx.beginPath();
-          ctx.arc(screenPoint.x, screenPoint.y, zoneSize * 0.6, 0, Math.PI * 2);
-          ctx.stroke();
-        }
+          ctx.arc(screenPoint.x, screenPoint.y, cellWidth * 2.5, 0, Math.PI * 2);
+          ctx.fill();
 
-        // Spawn rain/snow drops based on intensity
-        const dropSpawnChance = Math.min(intensity * 0.4, 0.3);
-        if (Math.random() < dropSpawnChance) {
-          const dropX = screenPoint.x + (Math.random() - 0.5) * zoneSize * 1.5;
-          const dropY = screenPoint.y + (Math.random() - 0.5) * zoneSize * 1.5;
+          // Spawn rain/snow drops based on intensity
+          if (precip > 0.5) {
+            const dropSpawnChance = Math.min(precip / 30, 0.15);
+            if (Math.random() < dropSpawnChance) {
+              const dropX = screenPoint.x + (Math.random() - 0.5) * cellWidth * 4;
+              const dropY = screenPoint.y + (Math.random() - 0.5) * cellHeight * 4;
 
-          // Only spawn drops within canvas
-          if (dropX >= 0 && dropX <= canvas.width && dropY >= -50 && dropY <= canvas.height / 2) {
-            rainDropsRef.current.push({
-              x: dropX,
-              y: dropY,
-              vy: hasSnow ? 1 + Math.random() * 1.5 : 4 + Math.random() * 3,
-              length: hasSnow ? 3 : 8 + Math.random() * 6,
-              opacity: 0.4 + Math.random() * 0.4,
-              isSnow: hasSnow,
-            });
+              // Only spawn drops within canvas
+              if (dropX >= 0 && dropX <= canvas.width && dropY >= -50 && dropY <= canvas.height / 2) {
+                rainDropsRef.current.push({
+                  x: dropX,
+                  y: dropY,
+                  vy: hasSnow ? 1 + Math.random() * 1.5 : 4 + Math.random() * 3,
+                  length: hasSnow ? 3 : 8 + Math.random() * 6,
+                  opacity: 0.4 + Math.random() * 0.4,
+                  isSnow: hasSnow,
+                });
+              }
+            }
           }
         }
-      });
-
-      // Reset composite operation for UI elements
-      ctx.globalCompositeOperation = 'source-over';
+      }
 
       // Draw and update rain/snow drops
       ctx.save();

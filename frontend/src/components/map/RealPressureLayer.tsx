@@ -30,8 +30,8 @@ export default function RealPressureLayer() {
       try {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
-        // Increased grid density for better visibility (8-10 points for professional look)
-        const gridSize = zoom > 10 ? 10 : zoom > 7 ? 8 : 7;
+        // Dense grid for smooth interpolation (12-15 points for professional look)
+        const gridSize = zoom > 10 ? 15 : zoom > 7 ? 12 : 10;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -123,11 +123,11 @@ export default function RealPressureLayer() {
         const pressure = weatherData.pressure;
         const color = getPressureColor(pressure);
 
-        // LARGER zones for professional weather map look
-        const zoneSize = 450;
+        // Large zones for smooth pressure display
+        const zoneSize = 500;
 
-        // MUCH MORE VISIBLE opacity like professional maps (0.45-0.65 range)
-        const baseAlpha = 0.50; // Increased from 0.25 to 0.50 for professional visibility
+        // SUBTLE opacity like professional maps (0.20-0.40 range)
+        const baseAlpha = 0.30; // Subtle for professional look
         const alpha = baseAlpha * opacity;
 
         const gradient = ctx.createRadialGradient(

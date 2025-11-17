@@ -13,13 +13,16 @@ interface GridPoint {
 interface WindParticle {
   x: number;
   y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  maxLife: number;
-  size: number;
+  age: number;
+  maxAge: number;
+  speed: number;
+  direction: number;
 }
 
+/**
+ * Professional Wind Layer with particle system (like Windy)
+ * Uses thousands of animated particles that follow the wind field
+ */
 export default function RealWindLayer() {
   const map = useMap();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -41,8 +44,9 @@ export default function RealWindLayer() {
       try {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
-        // Increased grid density for better visibility (8-10 points for professional look)
-        const gridSize = zoom > 10 ? 10 : zoom > 7 ? 8 : 7;
+
+        // Denser grid for better interpolation (12x12 minimum)
+        const gridSize = zoom > 10 ? 15 : zoom > 7 ? 12 : 10;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -71,13 +75,16 @@ export default function RealWindLayer() {
 
         await Promise.all(promises);
         gridDataRef.current = newGridData;
-        console.log('🌬️ Grid data loaded:', newGridData.length, 'points');
+
+        // Initialize particles when grid is loaded
+        initializeParticles();
+
+        console.log('🌬️ Wind grid loaded:', newGridData.length, 'points');
       } catch (error) {
-        console.error('🌬️ Error fetching grid data:', error);
+        console.error('🌬️ Error fetching wind grid data:', error);
       }
     };
 
-    // Debounced fetch handler
     const debouncedFetch = () => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(fetchGridData, 300);
@@ -95,6 +102,96 @@ export default function RealWindLayer() {
     };
   }, [map, isEnabled]);
 
+  // Initialize particle system (like Windy)
+  const initializeParticles = () => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const numParticles = 3000; // Professional amount like Windy
+
+    particlesRef.current = [];
+
+    for (let i = 0; i < numParticles; i++) {
+      particlesRef.current.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        age: Math.random() * 100,
+        maxAge: 50 + Math.random() * 50,
+        speed: 0,
+        direction: 0,
+      });
+    }
+  };
+
+  // Bilinear interpolation to get wind at any screen position
+  const getWindAtPoint = (x: number, y: number, selectedTime: Date): { speed: number; direction: number } | null => {
+    if (gridDataRef.current.length === 0) return null;
+
+    // Convert screen coords to lat/lng
+    const latLng = map.containerPointToLatLng([x, y]);
+
+    // Find the 4 nearest grid points
+    const bounds = map.getBounds();
+    const gridSize = Math.sqrt(gridDataRef.current.length) - 1;
+
+    const latRange = bounds.getNorth() - bounds.getSouth();
+    const lonRange = bounds.getEast() - bounds.getWest();
+
+    const normLat = (latLng.lat - bounds.getSouth()) / latRange;
+    const normLon = (latLng.lng - bounds.getWest()) / lonRange;
+
+    const gridX = normLon * gridSize;
+    const gridY = normLat * gridSize;
+
+    const x0 = Math.floor(gridX);
+    const y0 = Math.floor(gridY);
+    const x1 = Math.ceil(gridX);
+    const y1 = Math.ceil(gridY);
+
+    if (x0 < 0 || y0 < 0 || x1 > gridSize || y1 > gridSize) return null;
+
+    // Get wind data from 4 corners
+    const getGridWind = (gx: number, gy: number) => {
+      const idx = gy * (gridSize + 1) + gx;
+      if (idx < 0 || idx >= gridDataRef.current.length) return null;
+
+      const point = gridDataRef.current[idx];
+      if (!point || !point.forecast) return null;
+
+      const weather = getWeatherAtTime(point.forecast, selectedTime);
+      if (!weather) return null;
+
+      return { speed: weather.windSpeed, direction: weather.windDirection };
+    };
+
+    const w00 = getGridWind(x0, y0);
+    const w10 = getGridWind(x1, y0);
+    const w01 = getGridWind(x0, y1);
+    const w11 = getGridWind(x1, y1);
+
+    if (!w00 && !w10 && !w01 && !w11) return null;
+
+    // Bilinear interpolation
+    const fx = gridX - x0;
+    const fy = gridY - y0;
+
+    const avgSpeed = (
+      ((w00?.speed || 0) * (1 - fx) * (1 - fy)) +
+      ((w10?.speed || 0) * fx * (1 - fy)) +
+      ((w01?.speed || 0) * (1 - fx) * fy) +
+      ((w11?.speed || 0) * fx * fy)
+    );
+
+    const avgDirection = (
+      ((w00?.direction || 0) * (1 - fx) * (1 - fy)) +
+      ((w10?.direction || 0) * fx * (1 - fy)) +
+      ((w01?.direction || 0) * (1 - fx) * fy) +
+      ((w11?.direction || 0) * fx * fy)
+    );
+
+    return { speed: avgSpeed, direction: avgDirection };
+  };
+
   useEffect(() => {
     if (!isEnabled || !canvasRef.current) return;
 
@@ -106,163 +203,77 @@ export default function RealWindLayer() {
       const container = map.getContainer();
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
+      initializeParticles();
     };
 
     resizeCanvas();
     map.on('resize', resizeCanvas);
 
     const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      if (gridDataRef.current.length === 0) return;
-
       const selectedTime = new Date(timelinePosition);
 
-      // Create new particles at grid points
-      gridDataRef.current.forEach((point) => {
-        if (!point.forecast) return;
-
-        const weatherData = getWeatherAtTime(point.forecast, selectedTime);
-        if (!weatherData || weatherData.windSpeed < 1) return;
-
-        const latLng = { lat: point.lat, lng: point.lon };
-        const screenPoint = map.latLngToContainerPoint(latLng);
-
-        // Only create particles within canvas bounds
-        if (screenPoint.x < 0 || screenPoint.x > canvas.width || screenPoint.y < 0 || screenPoint.y > canvas.height) return;
-
-        const windSpeed = weatherData.windSpeed; // km/h
-        const windDir = weatherData.windDirection; // degrees
-
-        // Spawn probability based on wind speed (stronger wind = more particles)
-        const spawnChance = Math.min(windSpeed / 100, 0.3);
-        if (Math.random() < spawnChance) {
-          const angleRad = ((windDir - 90) * Math.PI) / 180;
-          const speedFactor = windSpeed / 10;
-
-          particlesRef.current.push({
-            x: screenPoint.x + (Math.random() - 0.5) * 60,
-            y: screenPoint.y + (Math.random() - 0.5) * 60,
-            vx: Math.cos(angleRad) * speedFactor,
-            vy: Math.sin(angleRad) * speedFactor,
-            life: 1,
-            maxLife: 60 + Math.random() * 40,
-            size: 1 + Math.random() * 1.5,
-          });
-        }
-
-        // Draw wind direction zone (colored background based on speed) BEFORE arrow
-        const zoneSize = 250;
-        const speedNormalized = Math.min(windSpeed / 80, 1); // 0-1 based on 0-80 km/h
-        const zoneAlpha = (0.25 + speedNormalized * 0.35) * opacity; // 0.25-0.6 range
-
-        const zoneGradient = ctx.createRadialGradient(
-          screenPoint.x, screenPoint.y, 0,
-          screenPoint.x, screenPoint.y, zoneSize
-        );
-
-        // Color based on wind speed (green->yellow->orange->red)
-        let zr, zg, zb;
-        if (windSpeed < 20) {
-          // Light wind - Light green
-          zr = 150; zg = 255; zb = 150;
-        } else if (windSpeed < 40) {
-          // Moderate wind - Yellow
-          zr = 255; zg = 255; zb = 100;
-        } else if (windSpeed < 60) {
-          // Strong wind - Orange
-          zr = 255; zg = 180; zb = 50;
-        } else {
-          // Very strong wind - Red
-          zr = 255; zg = 100; zb = 100;
-        }
-
-        zoneGradient.addColorStop(0, `rgba(${zr}, ${zg}, ${zb}, ${zoneAlpha})`);
-        zoneGradient.addColorStop(0.4, `rgba(${zr}, ${zg}, ${zb}, ${zoneAlpha * 0.6})`);
-        zoneGradient.addColorStop(0.7, `rgba(${zr}, ${zg}, ${zb}, ${zoneAlpha * 0.3})`);
-        zoneGradient.addColorStop(1, `rgba(${zr}, ${zg}, ${zb}, 0)`);
-
-        ctx.fillStyle = zoneGradient;
-        ctx.fillRect(
-          screenPoint.x - zoneSize,
-          screenPoint.y - zoneSize,
-          zoneSize * 2,
-          zoneSize * 2
-        );
-
-        // Draw static arrow for reference (MORE VISIBLE)
-        drawWindArrow(
-          ctx,
-          screenPoint.x,
-          screenPoint.y,
-          windDir,
-          windSpeed,
-          opacity * 1.0 // Full opacity for arrows
-        );
-      });
+      // Fade previous frame for trails (like Windy)
+      ctx.fillStyle = `rgba(0, 0, 0, 0.03)`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Update and draw particles
-      ctx.save();
-      particlesRef.current = particlesRef.current.filter((particle) => {
-        // Update particle
-        particle.x += particle.vx;
-        particle.y += particle.vy;
-        particle.life += 1;
+      particlesRef.current.forEach((particle) => {
+        // Get wind at particle position
+        const wind = getWindAtPoint(particle.x, particle.y, selectedTime);
 
-        // Remove if out of bounds or lifetime exceeded
-        if (
-          particle.x < -50 ||
-          particle.x > canvas.width + 50 ||
-          particle.y < -50 ||
-          particle.y > canvas.height + 50 ||
-          particle.life > particle.maxLife
-        ) {
-          return false;
+        if (wind && wind.speed > 0.5) {
+          // Update particle based on wind
+          const angleRad = ((wind.direction - 90) * Math.PI) / 180;
+          const speed = wind.speed / 3; // Adjust speed for pixel movement
+
+          particle.speed = wind.speed;
+          particle.direction = wind.direction;
+
+          // Move particle
+          particle.x += Math.cos(angleRad) * speed;
+          particle.y += Math.sin(angleRad) * speed;
+          particle.age++;
+
+          // Reset particle if too old or out of bounds
+          if (particle.age > particle.maxAge ||
+              particle.x < 0 || particle.x > canvas.width ||
+              particle.y < 0 || particle.y > canvas.height) {
+            particle.x = Math.random() * canvas.width;
+            particle.y = Math.random() * canvas.height;
+            particle.age = 0;
+            particle.maxAge = 50 + Math.random() * 50;
+          }
+
+          // Draw particle with color based on speed
+          const speedNormalized = Math.min(wind.speed / 60, 1);
+          let r, g, b;
+
+          if (wind.speed < 20) {
+            r = 100; g = 200; b = 255; // Light blue
+          } else if (wind.speed < 40) {
+            r = 255; g = 255; b = 100; // Yellow
+          } else if (wind.speed < 60) {
+            r = 255; g = 150; b = 0; // Orange
+          } else {
+            r = 255; g = 50; b = 50; // Red
+          }
+
+          const alpha = (1 - particle.age / particle.maxAge) * opacity * 0.8;
+
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+          ctx.fillRect(particle.x, particle.y, 2, 2);
+        } else {
+          // No wind, reset particle
+          particle.x = Math.random() * canvas.width;
+          particle.y = Math.random() * canvas.height;
+          particle.age = 0;
         }
-
-        // Draw particle with trail effect
-        const lifeFactor = 1 - particle.life / particle.maxLife;
-        const alpha = lifeFactor * opacity;
-
-        // Speed-based color
-        const speed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
-        const speedNormalized = Math.min(speed / 5, 1);
-        const r = Math.floor(200 + 55 * speedNormalized);
-        const g = Math.floor(220 - 60 * speedNormalized);
-        const b = Math.floor(255 - 100 * speedNormalized);
-
-        // Draw elongated particle (streak effect)
-        ctx.globalAlpha = alpha;
-        const gradient = ctx.createLinearGradient(
-          particle.x - particle.vx * 2,
-          particle.y - particle.vy * 2,
-          particle.x,
-          particle.y
-        );
-        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`);
-        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 1)`);
-
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = particle.size;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(particle.x - particle.vx * 3, particle.y - particle.vy * 3);
-        ctx.lineTo(particle.x, particle.y);
-        ctx.stroke();
-
-        return true;
       });
-      ctx.restore();
-
-      // Limit total particles for performance
-      if (particlesRef.current.length > 500) {
-        particlesRef.current = particlesRef.current.slice(-500);
-      }
     };
 
-    // Throttled animation: 15fps instead of 60fps for better performance
+    // Animate at 30fps for smooth particle motion
     let lastFrameTime = 0;
-    const targetFPS = 15;
+    const targetFPS = 30;
     const frameInterval = 1000 / targetFPS;
 
     const animate = (currentTime: number) => {
@@ -301,88 +312,4 @@ export default function RealWindLayer() {
       }}
     />
   );
-}
-
-function drawWindArrow(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  direction: number,
-  speed: number,
-  opacity: number
-) {
-  const angleRad = ((direction - 90) * Math.PI) / 180;
-  const length = Math.min(50, 18 + speed / 2); // Longer arrows for better visibility
-
-  // VIVID color based on wind speed (like professional maps)
-  const speedNormalized = Math.min(speed / 60, 1); // 0-1 scale
-  let r, g, b;
-
-  if (speed < 20) {
-    // Light wind - Green
-    r = 80; g = 200; b = 80;
-  } else if (speed < 40) {
-    // Moderate wind - Yellow
-    r = 255; g = 220; b = 0;
-  } else if (speed < 60) {
-    // Strong wind - Orange
-    r = 255; g = 140; b = 0;
-  } else {
-    // Very strong wind - Red
-    r = 255; g = 60; b = 60;
-  }
-
-  // FULL opacity for maximum visibility
-  const arrowOpacity = opacity;
-
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angleRad);
-
-  // Draw STRONG shadow for better visibility on map
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-  ctx.shadowBlur = 5;
-  ctx.shadowOffsetX = 2;
-  ctx.shadowOffsetY = 2;
-
-  // White outline for better contrast
-  ctx.strokeStyle = `rgba(255, 255, 255, ${arrowOpacity * 0.8})`;
-  ctx.lineWidth = 5;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(length, 0);
-  ctx.stroke();
-
-  // Arrow head outline
-  ctx.beginPath();
-  ctx.moveTo(length, 0);
-  ctx.lineTo(length - 10, -6);
-  ctx.lineTo(length - 10, 6);
-  ctx.closePath();
-  ctx.stroke();
-
-  // Main arrow color
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${arrowOpacity})`;
-  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${arrowOpacity})`;
-  ctx.lineWidth = 3.5;
-
-  // Main line
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(length, 0);
-  ctx.stroke();
-
-  // Arrow head (larger and more visible)
-  ctx.beginPath();
-  ctx.moveTo(length, 0);
-  ctx.lineTo(length - 10, -6);
-  ctx.lineTo(length - 10, 6);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.restore();
 }

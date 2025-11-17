@@ -30,8 +30,8 @@ export default function RealTemperatureLayer() {
       try {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
-        // Increased grid density for better visibility (8-10 points for professional look)
-        const gridSize = zoom > 10 ? 10 : zoom > 7 ? 8 : 7;
+        // Dense grid for smooth interpolation (12-15 points for professional look)
+        const gridSize = zoom > 10 ? 15 : zoom > 7 ? 12 : 10;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -123,11 +123,11 @@ export default function RealTemperatureLayer() {
         const temp = weatherData.temperature;
         const color = getTemperatureColor(temp);
 
-        // LARGER zones for professional weather map look
-        const zoneSize = 450;
+        // Large zones for smooth gradients
+        const zoneSize = 500;
 
-        // MUCH MORE VISIBLE opacity like professional maps (0.45-0.70 range)
-        const baseAlpha = 0.55; // Increased from 0.2 to 0.55 for professional visibility
+        // SUBTLE opacity like professional maps (0.15-0.35 range)
+        const baseAlpha = 0.25; // Subtle for professional look
         const alpha = baseAlpha * opacity;
 
         const gradient = ctx.createRadialGradient(
