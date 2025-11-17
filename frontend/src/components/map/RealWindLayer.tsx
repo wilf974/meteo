@@ -41,8 +41,8 @@ export default function RealWindLayer() {
       try {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
-        // OPTIMIZED: Reduced grid size for better performance (max 6x6 = 36 points instead of 15x15 = 256)
-        const gridSize = zoom > 10 ? 6 : zoom > 7 ? 5 : 4;
+        // Increased grid density for better visibility (8-10 points for professional look)
+        const gridSize = zoom > 10 ? 10 : zoom > 7 ? 8 : 7;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -151,14 +151,53 @@ export default function RealWindLayer() {
           });
         }
 
-        // Draw static arrow for reference
+        // Draw wind direction zone (colored background based on speed) BEFORE arrow
+        const zoneSize = 250;
+        const speedNormalized = Math.min(windSpeed / 80, 1); // 0-1 based on 0-80 km/h
+        const zoneAlpha = (0.25 + speedNormalized * 0.35) * opacity; // 0.25-0.6 range
+
+        const zoneGradient = ctx.createRadialGradient(
+          screenPoint.x, screenPoint.y, 0,
+          screenPoint.x, screenPoint.y, zoneSize
+        );
+
+        // Color based on wind speed (green->yellow->orange->red)
+        let zr, zg, zb;
+        if (windSpeed < 20) {
+          // Light wind - Light green
+          zr = 150; zg = 255; zb = 150;
+        } else if (windSpeed < 40) {
+          // Moderate wind - Yellow
+          zr = 255; zg = 255; zb = 100;
+        } else if (windSpeed < 60) {
+          // Strong wind - Orange
+          zr = 255; zg = 180; zb = 50;
+        } else {
+          // Very strong wind - Red
+          zr = 255; zg = 100; zb = 100;
+        }
+
+        zoneGradient.addColorStop(0, `rgba(${zr}, ${zg}, ${zb}, ${zoneAlpha})`);
+        zoneGradient.addColorStop(0.4, `rgba(${zr}, ${zg}, ${zb}, ${zoneAlpha * 0.6})`);
+        zoneGradient.addColorStop(0.7, `rgba(${zr}, ${zg}, ${zb}, ${zoneAlpha * 0.3})`);
+        zoneGradient.addColorStop(1, `rgba(${zr}, ${zg}, ${zb}, 0)`);
+
+        ctx.fillStyle = zoneGradient;
+        ctx.fillRect(
+          screenPoint.x - zoneSize,
+          screenPoint.y - zoneSize,
+          zoneSize * 2,
+          zoneSize * 2
+        );
+
+        // Draw static arrow for reference (MORE VISIBLE)
         drawWindArrow(
           ctx,
           screenPoint.x,
           screenPoint.y,
           windDir,
           windSpeed,
-          opacity * 0.75 // More visible arrows
+          opacity * 1.0 // Full opacity for arrows
         );
       });
 
@@ -273,32 +312,63 @@ function drawWindArrow(
   opacity: number
 ) {
   const angleRad = ((direction - 90) * Math.PI) / 180;
-  const length = Math.min(35, 12 + speed / 2.5);
+  const length = Math.min(50, 18 + speed / 2); // Longer arrows for better visibility
 
-  // Color based on wind speed intensity (darker for better visibility)
-  const speedNormalized = Math.min(speed / 50, 1); // 0-1 scale
-  const r = Math.floor(160 + 55 * speedNormalized);
-  const g = Math.floor(180 - 60 * speedNormalized);
-  const b = Math.floor(215 - 100 * speedNormalized);
+  // VIVID color based on wind speed (like professional maps)
+  const speedNormalized = Math.min(speed / 60, 1); // 0-1 scale
+  let r, g, b;
 
-  // Higher opacity for better visibility
-  const arrowOpacity = Math.min(0.75 + speedNormalized * 0.25, 1.0) * opacity;
+  if (speed < 20) {
+    // Light wind - Green
+    r = 80; g = 200; b = 80;
+  } else if (speed < 40) {
+    // Moderate wind - Yellow
+    r = 255; g = 220; b = 0;
+  } else if (speed < 60) {
+    // Strong wind - Orange
+    r = 255; g = 140; b = 0;
+  } else {
+    // Very strong wind - Red
+    r = 255; g = 60; b = 60;
+  }
+
+  // FULL opacity for maximum visibility
+  const arrowOpacity = opacity;
 
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angleRad);
 
-  // Draw subtle shadow for better visibility
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-  ctx.shadowBlur = 3;
-  ctx.shadowOffsetX = 1;
-  ctx.shadowOffsetY = 1;
+  // Draw STRONG shadow for better visibility on map
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+  ctx.shadowBlur = 5;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
 
-  ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${arrowOpacity})`;
-  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${arrowOpacity})`;
-  ctx.lineWidth = 2.5;
+  // White outline for better contrast
+  ctx.strokeStyle = `rgba(255, 255, 255, ${arrowOpacity * 0.8})`;
+  ctx.lineWidth = 5;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(length, 0);
+  ctx.stroke();
+
+  // Arrow head outline
+  ctx.beginPath();
+  ctx.moveTo(length, 0);
+  ctx.lineTo(length - 10, -6);
+  ctx.lineTo(length - 10, 6);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Main arrow color
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${arrowOpacity})`;
+  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${arrowOpacity})`;
+  ctx.lineWidth = 3.5;
 
   // Main line
   ctx.beginPath();
@@ -306,11 +376,11 @@ function drawWindArrow(
   ctx.lineTo(length, 0);
   ctx.stroke();
 
-  // Arrow head (smaller and more elegant)
+  // Arrow head (larger and more visible)
   ctx.beginPath();
   ctx.moveTo(length, 0);
-  ctx.lineTo(length - 8, -5);
-  ctx.lineTo(length - 8, 5);
+  ctx.lineTo(length - 10, -6);
+  ctx.lineTo(length - 10, 6);
   ctx.closePath();
   ctx.fill();
 

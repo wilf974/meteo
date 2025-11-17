@@ -30,8 +30,8 @@ export default function RealTemperatureLayer() {
       try {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
-        // OPTIMIZED: Reduced grid size for better performance (max 6x6 = 36 points instead of 15x15 = 256)
-        const gridSize = zoom > 10 ? 6 : zoom > 7 ? 5 : 4;
+        // Increased grid density for better visibility (8-10 points for professional look)
+        const gridSize = zoom > 10 ? 10 : zoom > 7 ? 8 : 7;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -107,8 +107,8 @@ export default function RealTemperatureLayer() {
 
       const selectedTime = new Date(timelinePosition);
 
-      // Use 'lighten' blend mode for temperature overlays
-      ctx.globalCompositeOperation = 'lighten';
+      // Use 'source-over' for direct rendering with better visibility
+      ctx.globalCompositeOperation = 'source-over';
 
       // Draw temperature zones
       gridDataRef.current.forEach((point) => {
@@ -123,11 +123,11 @@ export default function RealTemperatureLayer() {
         const temp = weatherData.temperature;
         const color = getTemperatureColor(temp);
 
-        // Much larger zones for smoother blending
-        const zoneSize = 350;
+        // LARGER zones for professional weather map look
+        const zoneSize = 450;
 
-        // More subtle opacity
-        const baseAlpha = 0.2; // Reduced from 0.85 to 0.2
+        // MUCH MORE VISIBLE opacity like professional maps (0.45-0.70 range)
+        const baseAlpha = 0.55; // Increased from 0.2 to 0.55 for professional visibility
         const alpha = baseAlpha * opacity;
 
         const gradient = ctx.createRadialGradient(
@@ -135,12 +135,12 @@ export default function RealTemperatureLayer() {
           screenPoint.x, screenPoint.y, zoneSize
         );
 
-        // Much smoother gradient with exponential falloff
+        // Professional gradient with clear temperature zone boundaries
         gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`);
-        gradient.addColorStop(0.3, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.7})`);
-        gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.4})`);
-        gradient.addColorStop(0.7, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.15})`);
-        gradient.addColorStop(0.85, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.05})`);
+        gradient.addColorStop(0.25, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.85})`);
+        gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.6})`);
+        gradient.addColorStop(0.75, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.3})`);
+        gradient.addColorStop(0.9, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.1})`);
         gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
 
         ctx.fillStyle = gradient;
@@ -150,10 +150,14 @@ export default function RealTemperatureLayer() {
           zoneSize * 2,
           zoneSize * 2
         );
-      });
 
-      // Reset composite operation
-      ctx.globalCompositeOperation = 'source-over';
+        // Add temperature isotherm contours for better visualization
+        ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.4})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(screenPoint.x, screenPoint.y, zoneSize * 0.6, 0, Math.PI * 2);
+        ctx.stroke();
+      });
     };
 
     // Throttled animation: 15fps instead of 60fps for better performance

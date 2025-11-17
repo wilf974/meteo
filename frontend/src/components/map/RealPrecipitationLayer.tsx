@@ -42,8 +42,8 @@ export default function RealPrecipitationLayer() {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
 
-        // OPTIMIZED: Reduced grid size for better performance (max 6x6 = 36 points instead of 15x15 = 256)
-        const gridSize = zoom > 10 ? 6 : zoom > 7 ? 5 : 4;
+        // Increased grid density for better visibility (8-10 points for professional look)
+        const gridSize = zoom > 10 ? 10 : zoom > 7 ? 8 : 7;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -131,8 +131,8 @@ export default function RealPrecipitationLayer() {
       // Count precipitation zones
       let precipCount = 0;
 
-      // Use 'lighter' blend mode for smooth overlapping zones
-      ctx.globalCompositeOperation = 'screen';
+      // Use 'source-over' for direct rendering with better visibility
+      ctx.globalCompositeOperation = 'source-over';
 
       // Draw precipitation zones using grid data
       gridDataRef.current.forEach((point) => {
@@ -159,11 +159,11 @@ export default function RealPrecipitationLayer() {
         const precip = totalPrecip;
         const intensity = Math.min(Math.pow(precip / 10, 0.7), 1); // Exponential curve for smoother gradation
 
-        // Much larger zones for smoother blending
-        const zoneSize = 350;
+        // LARGER zones for professional weather map look (like Windy)
+        const zoneSize = 450;
 
-        // More visible opacity for better contrast
-        const baseAlpha = 0.25 + (intensity * 0.55); // Range 0.25-0.80 for better visibility
+        // MUCH MORE VISIBLE opacity like professional maps (0.5-0.85 range)
+        const baseAlpha = 0.5 + (intensity * 0.35); // Range 0.5-0.85 for professional visibility
         const alpha = baseAlpha * opacity;
 
         // Create very smooth gradient with wider falloff
@@ -172,25 +172,28 @@ export default function RealPrecipitationLayer() {
           screenPoint.x, screenPoint.y, zoneSize
         );
 
-        // Determine color based on intensity (darker colors for better visibility)
+        // Determine color based on intensity - VIVID colors like pro weather maps
         let r, g, b;
         if (precip < 1) {
-          // Light rain - Darker soft blue
-          r = 80; g = 140; b = 220;
-        } else if (precip < 5) {
-          // Moderate rain - Darker medium blue
-          r = 40; g = 100; b = 200;
+          // Light rain - Bright cyan/light blue (like Windy)
+          r = 100; g = 200; b = 255;
+        } else if (precip < 3) {
+          // Moderate rain - Medium blue
+          r = 50; g = 150; b = 255;
+        } else if (precip < 7) {
+          // Heavy rain - Strong blue
+          r = 0; g = 100; b = 230;
         } else {
-          // Heavy rain - Very dark blue
-          r = 20; g = 60; b = 160;
+          // Very heavy rain - Deep blue/purple
+          r = 0; g = 50; b = 180;
         }
 
-        // Much smoother gradient with exponential falloff
+        // Professional gradient with clear zone boundaries
         gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
-        gradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, ${alpha * 0.7})`);
-        gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.4})`);
-        gradient.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, ${alpha * 0.15})`);
-        gradient.addColorStop(0.85, `rgba(${r}, ${g}, ${b}, ${alpha * 0.05})`);
+        gradient.addColorStop(0.25, `rgba(${r}, ${g}, ${b}, ${alpha * 0.85})`);
+        gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.6})`);
+        gradient.addColorStop(0.75, `rgba(${r}, ${g}, ${b}, ${alpha * 0.3})`);
+        gradient.addColorStop(0.9, `rgba(${r}, ${g}, ${b}, ${alpha * 0.1})`);
         gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
 
         ctx.fillStyle = gradient;
@@ -200,6 +203,15 @@ export default function RealPrecipitationLayer() {
           zoneSize * 2,
           zoneSize * 2
         );
+
+        // Add contour/border for better zone definition (like professional maps)
+        if (precip > 1) {
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.4})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(screenPoint.x, screenPoint.y, zoneSize * 0.6, 0, Math.PI * 2);
+          ctx.stroke();
+        }
 
         // Spawn rain/snow drops based on intensity
         const dropSpawnChance = Math.min(intensity * 0.4, 0.3);

@@ -30,8 +30,8 @@ export default function RealCloudLayer() {
       try {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
-        // OPTIMIZED: Reduced grid size for better performance (max 6x6 = 36 points instead of 15x15 = 256)
-        const gridSize = zoom > 10 ? 6 : zoom > 7 ? 5 : 4;
+        // Increased grid density for better visibility (8-10 points for professional look)
+        const gridSize = zoom > 10 ? 10 : zoom > 7 ? 8 : 7;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -107,8 +107,8 @@ export default function RealCloudLayer() {
 
       const selectedTime = new Date(timelinePosition);
 
-      // Use multiply blend mode for realistic cloud shadows
-      ctx.globalCompositeOperation = 'multiply';
+      // Use source-over for better visibility of cloud zones
+      ctx.globalCompositeOperation = 'source-over';
 
       // Draw cloud cover zones
       gridDataRef.current.forEach((point) => {
@@ -122,11 +122,11 @@ export default function RealCloudLayer() {
 
         const cloudCover = weatherData.cloudCover / 100; // 0-1
 
-        // Much larger zones for smoother blending
-        const zoneSize = 350;
+        // LARGER zones for professional cloud display
+        const zoneSize = 450;
 
-        // More subtle opacity with exponential curve
-        const baseAlpha = 0.05 + (Math.pow(cloudCover, 1.2) * 0.25); // Range 0.05-0.30
+        // MUCH MORE VISIBLE opacity like professional maps (0.35-0.65 range)
+        const baseAlpha = 0.35 + (Math.pow(cloudCover, 0.9) * 0.3); // Range 0.35-0.65
         const alpha = baseAlpha * opacity;
 
         const gradient = ctx.createRadialGradient(
@@ -134,26 +134,29 @@ export default function RealCloudLayer() {
           screenPoint.x, screenPoint.y, zoneSize
         );
 
-        // Determine gray level based on cloud cover
-        let grayValue;
+        // VIVID cloud colors based on cloud cover (white to dark gray with blue tint)
+        let r, g, b;
         if (cloudCover < 0.3) {
-          // Few clouds - light gray
-          grayValue = 240;
-        } else if (cloudCover < 0.7) {
-          // Moderate clouds - medium gray
-          grayValue = 200;
+          // Few clouds - Bright white with blue tint
+          r = 240; g = 245; b = 250;
+        } else if (cloudCover < 0.6) {
+          // Moderate clouds - Light gray with blue tint
+          r = 200; g = 210; b = 220;
+        } else if (cloudCover < 0.85) {
+          // Heavy clouds - Medium gray with blue tint
+          r = 160; g = 170; b = 185;
         } else {
-          // Heavy clouds - darker gray
-          grayValue = 160;
+          // Overcast - Dark gray with blue tint
+          r = 120; g = 130; b = 145;
         }
 
-        // Create smooth gradient with exponential falloff
-        gradient.addColorStop(0, `rgba(${grayValue}, ${grayValue}, ${grayValue + 10}, ${alpha})`);
-        gradient.addColorStop(0.3, `rgba(${grayValue}, ${grayValue}, ${grayValue + 10}, ${alpha * 0.7})`);
-        gradient.addColorStop(0.5, `rgba(${grayValue}, ${grayValue}, ${grayValue + 10}, ${alpha * 0.4})`);
-        gradient.addColorStop(0.7, `rgba(${grayValue}, ${grayValue}, ${grayValue + 10}, ${alpha * 0.15})`);
-        gradient.addColorStop(0.85, `rgba(${grayValue}, ${grayValue}, ${grayValue + 10}, ${alpha * 0.05})`);
-        gradient.addColorStop(1, `rgba(${grayValue}, ${grayValue}, ${grayValue + 10}, 0)`);
+        // Professional gradient with clear cloud boundaries
+        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
+        gradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, ${alpha * 0.8})`);
+        gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.55})`);
+        gradient.addColorStop(0.75, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
+        gradient.addColorStop(0.9, `rgba(${r}, ${g}, ${b}, ${alpha * 0.08})`);
+        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
 
         ctx.fillStyle = gradient;
         ctx.fillRect(
@@ -162,10 +165,16 @@ export default function RealCloudLayer() {
           zoneSize * 2,
           zoneSize * 2
         );
-      });
 
-      // Reset composite operation
-      ctx.globalCompositeOperation = 'source-over';
+        // Add subtle contour for cloud definition (for heavy clouds)
+        if (cloudCover > 0.5) {
+          ctx.strokeStyle = `rgba(${r - 30}, ${g - 30}, ${b - 20}, ${alpha * 0.3})`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(screenPoint.x, screenPoint.y, zoneSize * 0.55, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      });
     };
 
     // Throttled animation: 15fps instead of 60fps for better performance

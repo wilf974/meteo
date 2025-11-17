@@ -30,8 +30,8 @@ export default function RealPressureLayer() {
       try {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
-        // Optimized grid size for performance
-        const gridSize = zoom > 10 ? 6 : zoom > 7 ? 5 : 4;
+        // Increased grid density for better visibility (8-10 points for professional look)
+        const gridSize = zoom > 10 ? 10 : zoom > 7 ? 8 : 7;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -107,8 +107,8 @@ export default function RealPressureLayer() {
 
       const selectedTime = new Date(timelinePosition);
 
-      // Use 'lighten' blend mode for better overlay
-      ctx.globalCompositeOperation = 'lighten';
+      // Use 'source-over' for direct rendering with better visibility
+      ctx.globalCompositeOperation = 'source-over';
 
       // Draw pressure zones
       gridDataRef.current.forEach((point) => {
@@ -123,11 +123,11 @@ export default function RealPressureLayer() {
         const pressure = weatherData.pressure;
         const color = getPressureColor(pressure);
 
-        // Large zones for smooth blending
-        const zoneSize = 350;
+        // LARGER zones for professional weather map look
+        const zoneSize = 450;
 
-        // Subtle opacity
-        const baseAlpha = 0.25;
+        // MUCH MORE VISIBLE opacity like professional maps (0.45-0.65 range)
+        const baseAlpha = 0.50; // Increased from 0.25 to 0.50 for professional visibility
         const alpha = baseAlpha * opacity;
 
         const gradient = ctx.createRadialGradient(
@@ -135,12 +135,12 @@ export default function RealPressureLayer() {
           screenPoint.x, screenPoint.y, zoneSize
         );
 
-        // Smooth gradient with exponential falloff
+        // Professional gradient with clear pressure zone boundaries
         gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`);
-        gradient.addColorStop(0.3, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.7})`);
-        gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.4})`);
-        gradient.addColorStop(0.7, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.15})`);
-        gradient.addColorStop(0.85, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.05})`);
+        gradient.addColorStop(0.25, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.85})`);
+        gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.6})`);
+        gradient.addColorStop(0.75, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.3})`);
+        gradient.addColorStop(0.9, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.1})`);
         gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
 
         ctx.fillStyle = gradient;
@@ -150,10 +150,14 @@ export default function RealPressureLayer() {
           zoneSize * 2,
           zoneSize * 2
         );
-      });
 
-      // Reset composite operation
-      ctx.globalCompositeOperation = 'source-over';
+        // Add isobar contours for better pressure visualization
+        ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.5})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(screenPoint.x, screenPoint.y, zoneSize * 0.6, 0, Math.PI * 2);
+        ctx.stroke();
+      });
     };
 
     // Throttled animation: 15fps for better performance
