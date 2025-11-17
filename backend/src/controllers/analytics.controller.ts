@@ -7,8 +7,13 @@ class AnalyticsController {
    */
   async recordConnection(req: Request, res: Response): Promise<void> {
     try {
-      // Use IP address as visitor ID (or session ID if available)
-      const visitorId = req.ip || req.connection.remoteAddress || 'unknown';
+      // Get real IP from nginx proxy headers (X-Real-IP or X-Forwarded-For)
+      const visitorId =
+        (req.headers['x-real-ip'] as string) ||
+        (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() ||
+        req.ip ||
+        req.connection.remoteAddress ||
+        'unknown';
 
       console.log(`📡 Analytics tracking request received from: ${visitorId}`);
 
