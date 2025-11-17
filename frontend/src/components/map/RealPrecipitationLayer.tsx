@@ -178,9 +178,9 @@ export default function RealPrecipitationLayer() {
             r = 0; g = 60; b = 160;
           }
 
-          // SUBTLE opacity (0.2-0.5 range) like professional maps
+          // VERY SUBTLE opacity (0.1-0.35 range) to keep map visible
           const intensity = Math.min(precip / 15, 1);
-          const alpha = (0.2 + intensity * 0.3) * opacity;
+          const alpha = (0.1 + intensity * 0.25) * opacity;
 
           // Large smooth gradient for natural look
           const gradient = ctx.createRadialGradient(

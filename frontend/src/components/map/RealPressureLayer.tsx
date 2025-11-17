@@ -126,8 +126,8 @@ export default function RealPressureLayer() {
         // Large zones for smooth pressure display
         const zoneSize = 500;
 
-        // SUBTLE opacity like professional maps (0.20-0.40 range)
-        const baseAlpha = 0.30; // Subtle for professional look
+        // VERY SUBTLE opacity to keep map visible (0.18 range)
+        const baseAlpha = 0.18; // Very subtle to not hide map
         const alpha = baseAlpha * opacity;
 
         const gradient = ctx.createRadialGradient(

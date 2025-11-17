@@ -126,8 +126,8 @@ export default function RealTemperatureLayer() {
         // Large zones for smooth gradients
         const zoneSize = 500;
 
-        // SUBTLE opacity like professional maps (0.15-0.35 range)
-        const baseAlpha = 0.25; // Subtle for professional look
+        // VERY SUBTLE opacity to keep map visible (0.15 range)
+        const baseAlpha = 0.15; // Very subtle to not hide map
         const alpha = baseAlpha * opacity;
 
         const gradient = ctx.createRadialGradient(

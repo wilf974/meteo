@@ -212,9 +212,8 @@ export default function RealWindLayer() {
     const draw = () => {
       const selectedTime = new Date(timelinePosition);
 
-      // Fade previous frame for trails (like Windy)
-      ctx.fillStyle = `rgba(0, 0, 0, 0.03)`;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Clear canvas each frame (no fade effect to avoid darkening the map)
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Update and draw particles
       particlesRef.current.forEach((particle) => {
@@ -258,10 +257,11 @@ export default function RealWindLayer() {
             r = 255; g = 50; b = 50; // Red
           }
 
-          const alpha = (1 - particle.age / particle.maxAge) * opacity * 0.8;
+          // Very subtle opacity for particles
+          const alpha = (1 - particle.age / particle.maxAge) * opacity * 0.3;
 
           ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-          ctx.fillRect(particle.x, particle.y, 2, 2);
+          ctx.fillRect(particle.x, particle.y, 1.5, 1.5);
         } else {
           // No wind, reset particle
           particle.x = Math.random() * canvas.width;
