@@ -1,0 +1,175 @@
+/* Optimisations mobiles globales pour Météo Pro */
+
+/* Améliorer les performances de scroll */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Zones tactiles minimales de 44x44px (recommandation Apple/Google) */
+button,
+a,
+[role="button"],
+input[type="button"],
+input[type="submit"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (min-width: 768px) {
+  button,
+  a,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"] {
+    min-height: auto;
+    min-width: auto;
+  }
+}
+
+/* Améliorer la lisibilité sur mobile */
+@media (max-width: 640px) {
+  body {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+  h4 { font-size: 1.125rem; }
+}
+
+/* Optimiser les performances des animations sur mobile */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Améliorer les performances de rendu */
+.leaflet-container,
+.leaflet-pane,
+.leaflet-tile-pane {
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Scroll horizontal fluide sur mobile */
+.horizontal-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.horizontal-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Pull to refresh sur iOS */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Éviter le sélection de texte accidentelle sur mobile */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Améliorer les boutons pour le tactile */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  [role="button"] {
+    padding: 12px 16px;
+  }
+}
+
+/* Support du mode sombre système */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+/* Optimiser les inputs sur mobile */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* Évite le zoom automatique sur iOS */
+    padding: 12px;
+  }
+
+  /* Améliorer l'apparence des checkbox et radio sur mobile */
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 24px;
+    min-height: 24px;
+    cursor: pointer;
+  }
+}
+
+/* Gérer les notchs et safe areas */
+@supports (padding: max(0px)) {
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .safe-area-padding-bottom {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Améliorer la carte Leaflet sur mobile */
+@media (max-width: 768px) {
+  .leaflet-control-zoom {
+    margin-top: 60px !important;
+    margin-right: 10px !important;
+  }
+
+  .leaflet-control-zoom a {
+    width: 40px !important;
+    height: 40px !important;
+    line-height: 40px !important;
+    font-size: 22px !important;
+  }
+
+  .leaflet-control-attribution {
+    font-size: 10px !important;
+    padding: 2px 4px !important;
+  }
+}
+
+/* Optimisation des performances - Forcer l'accélération GPU */
+.gpu-accelerated {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Loading skeleton mobile-friendly */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.skeleton {
+  animation: shimmer 1.2s ease-in-out infinite;
+  background: linear-gradient(to right, #f0f0f0 8%, #e0e0e0 18%, #f0f0f0 33%);
+  background-size: 800px 104px;
+}
