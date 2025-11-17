@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
+// Use relative URL to work with nginx proxy
+// In production, nginx routes /api to backend:5001
+const API_URL = '/api/v1';
 
 /**
  * Hook to track user connections
@@ -15,6 +17,7 @@ export function useAnalytics() {
 
     const trackConnection = async () => {
       try {
+        console.log('📊 Attempting to track connection...');
         const response = await fetch(`${API_URL}/analytics/track`, {
           method: 'POST',
           headers: {
@@ -23,10 +26,10 @@ export function useAnalytics() {
         });
 
         if (response.ok) {
-          console.log('📊 Connection tracked');
+          console.log('✅ Connection tracked successfully');
           tracked.current = true;
         } else {
-          console.warn('⚠️ Failed to track connection:', response.statusText);
+          console.warn('⚠️ Failed to track connection:', response.status, response.statusText);
         }
       } catch (error) {
         console.error('❌ Error tracking connection:', error);
