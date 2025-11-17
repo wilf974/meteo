@@ -1,4 +1,5 @@
 import { useRef, useCallback, useEffect } from 'react';
+import type { TouchEvent as ReactTouchEvent, MouseEvent as ReactMouseEvent } from 'react';
 
 interface SwipeCallbacks {
   onSwipeLeft?: () => void;
@@ -58,13 +59,13 @@ export function useSwipeGesture(
     }
   }, [callbacks, threshold]);
 
-  const handleTouchStart = useCallback((e: TouchEvent) => {
+  const handleTouchStart = useCallback((e: ReactTouchEvent) => {
     touchStartX.current = e.changedTouches[0].screenX;
     touchStartY.current = e.changedTouches[0].screenY;
   }, []);
 
   const handleTouchMove = useCallback(
-    (e: TouchEvent) => {
+    (e: ReactTouchEvent) => {
       if (preventDefaultTouchmoveEvent) {
         e.preventDefault();
       }
@@ -73,7 +74,7 @@ export function useSwipeGesture(
   );
 
   const handleTouchEnd = useCallback(
-    (e: TouchEvent) => {
+    (e: ReactTouchEvent) => {
       touchEndX.current = e.changedTouches[0].screenX;
       touchEndY.current = e.changedTouches[0].screenY;
       handleSwipe();
@@ -82,14 +83,14 @@ export function useSwipeGesture(
   );
 
   // Support de la souris pour le dev/desktop
-  const handleMouseDown = useCallback((e: MouseEvent) => {
+  const handleMouseDown = useCallback((e: ReactMouseEvent) => {
     if (!trackMouse) return;
     touchStartX.current = e.screenX;
     touchStartY.current = e.screenY;
   }, [trackMouse]);
 
   const handleMouseUp = useCallback(
-    (e: MouseEvent) => {
+    (e: ReactMouseEvent) => {
       if (!trackMouse) return;
       touchEndX.current = e.screenX;
       touchEndY.current = e.screenY;
