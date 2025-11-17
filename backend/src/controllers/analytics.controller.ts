@@ -10,6 +10,8 @@ class AnalyticsController {
       // Use IP address as visitor ID (or session ID if available)
       const visitorId = req.ip || req.connection.remoteAddress || 'unknown';
 
+      console.log(`📡 Analytics tracking request received from: ${visitorId}`);
+
       await analyticsService.recordConnection(visitorId);
 
       res.status(200).json({
@@ -17,7 +19,7 @@ class AnalyticsController {
         message: 'Connection recorded',
       });
     } catch (error) {
-      console.error('Error recording connection:', error);
+      console.error('❌ Error recording connection:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error',

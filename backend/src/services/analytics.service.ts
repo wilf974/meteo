@@ -31,6 +31,7 @@ class AnalyticsService {
       // Ensure data directory exists
       const dataDir = path.dirname(this.dataFilePath);
       await fs.mkdir(dataDir, { recursive: true });
+      console.log(`📁 Data directory created/verified: ${dataDir}`);
 
       // Load existing data if file exists
       try {
@@ -46,21 +47,31 @@ class AnalyticsService {
             totalConnections: typedStats.totalConnections || 0,
           });
         }
+        console.log(`📊 Loaded ${this.currentLog.size} days of analytics data`);
       } catch (error) {
         // File doesn't exist yet, start fresh
         console.log('📊 Starting fresh analytics log');
+        // Create empty file to ensure it exists
+        await fs.writeFile(this.dataFilePath, '{}', 'utf-8');
       }
 
       this.initialized = true;
-      console.log('📊 Analytics service initialized');
+      console.log('✅ Analytics service initialized successfully');
     } catch (error) {
       console.error('❌ Error initializing analytics service:', error);
+      // Don't set initialized to true on error - this is important!
+      throw error;
     }
   }
 
   private async ensureInitialized(): Promise<void> {
     if (!this.initialized) {
-      await this.initialize();
+      try {
+        await this.initialize();
+      } catch (error) {
+        console.error('❌ Failed to initialize analytics service:', error);
+        throw new Error('Analytics service initialization failed');
+      }
     }
   }
 
@@ -79,11 +90,15 @@ class AnalyticsService {
         uniqueVisitors: new Set(),
         totalConnections: 0,
       });
+      console.log(`📅 Created new log entry for ${today}`);
     }
 
     const dayLog = this.currentLog.get(today)!;
+    const isNewVisitor = !dayLog.uniqueVisitors.has(visitorId);
     dayLog.uniqueVisitors.add(visitorId);
     dayLog.totalConnections += 1;
+
+    console.log(`📊 Connection recorded - Visitor: ${visitorId.substring(0, 10)}..., New: ${isNewVisitor}, Total today: ${dayLog.totalConnections}`);
 
     // Save to file
     await this.saveData();
@@ -177,8 +192,11 @@ class AnalyticsService {
       }
 
       await fs.writeFile(this.dataFilePath, JSON.stringify(dataToSave, null, 2), 'utf-8');
+      console.log(`💾 Analytics data saved successfully (${Object.keys(dataToSave).length} days)`);
     } catch (error) {
       console.error('❌ Error saving analytics data:', error);
+      // Re-throw to notify caller of failure
+      throw error;
     }
   }
 
