@@ -1,88 +1,17 @@
 import { useEffect, useRef } from 'react';
 import { useMap } from 'react-leaflet';
 import { useMapStore } from '../../store/mapStore';
-import { getWeatherAtTime, type ForecastResponse } from '../../services/openMeteo.service';
-import { weatherCache } from '../../services/weatherCache.service';
-
-interface GridPoint {
-  lat: number;
-  lon: number;
-  forecast: ForecastResponse | null;
-}
+import { getWeatherAtTime } from '../../services/openMeteo.service';
 
 export default function RealTemperatureLayer() {
   const map = useMap();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
-  const gridDataRef = useRef<GridPoint[]>([]);
-  const { activeLayers, timelinePosition } = useMapStore();
+  const { activeLayers, timelinePosition, weatherGrid } = useMapStore();
 
   const tempLayer = activeLayers.find(l => l.id === 'temperature');
   const isEnabled = tempLayer?.enabled || false;
   const opacity = tempLayer?.opacity || 1;
-
-  useEffect(() => {
-    if (!isEnabled) return;
-
-    let debounceTimer: NodeJS.Timeout;
-
-    const fetchGridData = async () => {
-      try {
-        const bounds = map.getBounds();
-        const zoom = map.getZoom();
-        // Dense grid for smooth interpolation (12-15 points for professional look)
-        const gridSize = zoom > 10 ? 15 : zoom > 7 ? 12 : 10;
-
-        const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
-        const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
-
-        console.log('🌡️ Fetching temperature grid:', gridSize, 'x', gridSize);
-
-        const newGridData: GridPoint[] = [];
-        const promises: Promise<void>[] = [];
-
-        for (let i = 0; i <= gridSize; i++) {
-          for (let j = 0; j <= gridSize; j++) {
-            const lat = bounds.getSouth() + i * latStep;
-            const lon = bounds.getWest() + j * lonStep;
-
-            const promise = weatherCache.getForecast(lat, lon)
-              .then(forecast => {
-                newGridData.push({ lat, lon, forecast });
-              })
-              .catch(error => {
-                newGridData.push({ lat, lon, forecast: null });
-              });
-
-            promises.push(promise);
-          }
-        }
-
-        await Promise.all(promises);
-        gridDataRef.current = newGridData;
-        console.log('🌡️ Grid data loaded:', newGridData.length, 'points');
-      } catch (error) {
-        console.error('🌡️ Error fetching grid data:', error);
-      }
-    };
-
-    // Debounced fetch handler
-    const debouncedFetch = () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(fetchGridData, 300);
-    };
-
-    fetchGridData();
-
-    map.on('moveend', debouncedFetch);
-    map.on('zoomend', debouncedFetch);
-
-    return () => {
-      clearTimeout(debounceTimer);
-      map.off('moveend', debouncedFetch);
-      map.off('zoomend', debouncedFetch);
-    };
-  }, [map, isEnabled]);
 
   useEffect(() => {
     if (!isEnabled || !canvasRef.current) return;
@@ -103,7 +32,7 @@ export default function RealTemperatureLayer() {
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      if (gridDataRef.current.length === 0) return;
+      if (weatherGrid.length === 0) return;
 
       const selectedTime = new Date(timelinePosition);
 
@@ -111,7 +40,7 @@ export default function RealTemperatureLayer() {
       ctx.globalCompositeOperation = 'source-over';
 
       // Draw temperature zones
-      gridDataRef.current.forEach((point) => {
+      weatherGrid.forEach((point) => {
         if (!point.forecast) return;
 
         const weatherData = getWeatherAtTime(point.forecast, selectedTime);
@@ -183,7 +112,7 @@ export default function RealTemperatureLayer() {
       }
       map.off('resize', resizeCanvas);
     };
-  }, [map, isEnabled, opacity, timelinePosition]);
+  }, [map, isEnabled, opacity, timelinePosition, weatherGrid]);
 
   if (!isEnabled) return null;
 

@@ -1,14 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useMap } from 'react-leaflet';
 import { useMapStore } from '../../store/mapStore';
-import { getWeatherAtTime, type ForecastResponse } from '../../services/openMeteo.service';
-import { weatherCache } from '../../services/weatherCache.service';
-
-interface GridPoint {
-  lat: number;
-  lon: number;
-  forecast: ForecastResponse | null;
-}
+import { getWeatherAtTime } from '../../services/openMeteo.service';
 
 interface RainDrop {
   x: number;
@@ -23,79 +16,12 @@ export default function RealPrecipitationLayer() {
   const map = useMap();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
-  const gridDataRef = useRef<GridPoint[]>([]);
   const rainDropsRef = useRef<RainDrop[]>([]);
-  const { activeLayers, timelinePosition } = useMapStore();
+  const { activeLayers, timelinePosition, weatherGrid } = useMapStore();
 
   const precipLayer = activeLayers.find(l => l.id === 'precipitation');
   const isEnabled = precipLayer?.enabled || false;
   const opacity = precipLayer?.opacity || 1;
-
-  // Fetch grid data for the visible map area
-  useEffect(() => {
-    if (!isEnabled) return;
-
-    let debounceTimer: NodeJS.Timeout;
-
-    const fetchGridData = async () => {
-      try {
-        const bounds = map.getBounds();
-        const zoom = map.getZoom();
-
-        // Dense grid for smooth interpolation (12-15 points for professional look)
-        const gridSize = zoom > 10 ? 15 : zoom > 7 ? 12 : 10;
-
-        const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
-        const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
-
-        console.log('💧 Fetching precipitation grid:', gridSize, 'x', gridSize);
-
-        const newGridData: GridPoint[] = [];
-        const promises: Promise<void>[] = [];
-
-        for (let i = 0; i <= gridSize; i++) {
-          for (let j = 0; j <= gridSize; j++) {
-            const lat = bounds.getSouth() + i * latStep;
-            const lon = bounds.getWest() + j * lonStep;
-
-            const promise = weatherCache.getForecast(lat, lon)
-              .then(forecast => {
-                newGridData.push({ lat, lon, forecast });
-              })
-              .catch(error => {
-                console.error('Error fetching grid point:', lat, lon, error);
-                newGridData.push({ lat, lon, forecast: null });
-              });
-
-            promises.push(promise);
-          }
-        }
-
-        await Promise.all(promises);
-        gridDataRef.current = newGridData;
-        console.log('💧 Grid data loaded:', newGridData.length, 'points');
-      } catch (error) {
-        console.error('💧 Error fetching grid data:', error);
-      }
-    };
-
-    // Debounced fetch handler
-    const debouncedFetch = () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(fetchGridData, 300);
-    };
-
-    fetchGridData();
-
-    map.on('moveend', debouncedFetch);
-    map.on('zoomend', debouncedFetch);
-
-    return () => {
-      clearTimeout(debounceTimer);
-      map.off('moveend', debouncedFetch);
-      map.off('zoomend', debouncedFetch);
-    };
-  }, [map, isEnabled]);
 
   useEffect(() => {
     if (!isEnabled || !canvasRef.current) return;
@@ -116,15 +42,7 @@ export default function RealPrecipitationLayer() {
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      if (gridDataRef.current.length === 0) {
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        ctx.fillRect(canvas.width / 2 - 100, canvas.height / 2 - 25, 200, 50);
-        ctx.fillStyle = 'white';
-        ctx.font = '14px sans-serif';
-        ctx.fillText('Chargement zones météo...', canvas.width / 2 - 90, canvas.height / 2 + 5);
-        return;
-      }
+      if (weatherGrid.length === 0) return;
 
       const selectedTime = new Date(timelinePosition);
 
@@ -132,7 +50,7 @@ export default function RealPrecipitationLayer() {
       ctx.globalCompositeOperation = 'source-over';
 
       // Draw precipitation with SMOOTH gradient across entire canvas
-      const gridSize = Math.sqrt(gridDataRef.current.length) - 1;
+      const gridSize = Math.sqrt(weatherGrid.length) - 1;
       const cellWidth = canvas.width / gridSize;
       const cellHeight = canvas.height / gridSize;
 
@@ -140,7 +58,7 @@ export default function RealPrecipitationLayer() {
       for (let i = 0; i < gridSize; i++) {
         for (let j = 0; j < gridSize; j++) {
           const idx = i * (gridSize + 1) + j;
-          const point = gridDataRef.current[idx];
+          const point = weatherGrid[idx];
 
           if (!point || !point.forecast) continue;
 
@@ -295,7 +213,7 @@ export default function RealPrecipitationLayer() {
       }
       map.off('resize', resizeCanvas);
     };
-  }, [map, isEnabled, opacity, timelinePosition]);
+  }, [map, isEnabled, opacity, timelinePosition, weatherGrid]);
 
   if (!isEnabled) return null;
 

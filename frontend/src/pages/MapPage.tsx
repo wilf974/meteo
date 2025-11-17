@@ -16,6 +16,7 @@ import RealPrecipitationLayer from '../components/map/RealPrecipitationLayer';
 import RealWindLayer from '../components/map/RealWindLayer';
 import RealCloudLayer from '../components/map/RealCloudLayer';
 import RealPressureLayer from '../components/map/RealPressureLayer';
+import WeatherGridManager from '../components/map/WeatherGridManager';
 import FavoritesMarkers from '../components/map/FavoritesMarkers';
 import 'leaflet/dist/leaflet.css';
 
@@ -75,6 +76,9 @@ export default function MapPage() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        {/* Centralized weather grid manager - fetches data for all layers */}
+        <WeatherGridManager />
 
         {/* Open-Meteo grid-based layers - vraies zones météo qui se déplacent */}
         <RealTemperatureLayer />

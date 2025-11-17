@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { ForecastResponse } from '../services/openMeteo.service';
 
 export interface LayerConfig {
   id: string;
@@ -9,6 +10,12 @@ export interface LayerConfig {
   order: number;
 }
 
+export interface GridPoint {
+  lat: number;
+  lon: number;
+  forecast: ForecastResponse | null;
+}
+
 interface MapState {
   activeLayers: LayerConfig[];
   center: [number, number];
@@ -16,6 +23,9 @@ interface MapState {
   timelinePosition: Date;
   isPlaying: boolean;
   selectedPoint: { lat: number; lon: number } | null;
+  // Shared weather grid data for all layers
+  weatherGrid: GridPoint[];
+  isLoadingGrid: boolean;
   setActiveLayers: (layers: LayerConfig[]) => void;
   toggleLayer: (layerId: string) => void;
   setLayerOpacity: (layerId: string, opacity: number) => void;
@@ -24,6 +34,8 @@ interface MapState {
   setTimelinePosition: (time: Date) => void;
   setIsPlaying: (playing: boolean) => void;
   setSelectedPoint: (point: { lat: number; lon: number } | null) => void;
+  setWeatherGrid: (grid: GridPoint[]) => void;
+  setIsLoadingGrid: (loading: boolean) => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -39,6 +51,8 @@ export const useMapStore = create<MapState>((set) => ({
   timelinePosition: new Date(),
   isPlaying: false,
   selectedPoint: null,
+  weatherGrid: [],
+  isLoadingGrid: false,
   setActiveLayers: (layers) => set({ activeLayers: layers }),
   toggleLayer: (layerId) => set((state) => ({
     activeLayers: state.activeLayers.map((layer) =>
@@ -55,4 +69,6 @@ export const useMapStore = create<MapState>((set) => ({
   setTimelinePosition: (time) => set({ timelinePosition: time }),
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   setSelectedPoint: (point) => set({ selectedPoint: point }),
+  setWeatherGrid: (grid) => set({ weatherGrid: grid }),
+  setIsLoadingGrid: (loading) => set({ isLoadingGrid: loading }),
 }));

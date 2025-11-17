@@ -1,14 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useMap } from 'react-leaflet';
 import { useMapStore } from '../../store/mapStore';
-import { getWeatherAtTime, type ForecastResponse } from '../../services/openMeteo.service';
-import { weatherCache } from '../../services/weatherCache.service';
-
-interface GridPoint {
-  lat: number;
-  lon: number;
-  forecast: ForecastResponse | null;
-}
+import { getWeatherAtTime } from '../../services/openMeteo.service';
 
 interface WindParticle {
   x: number;
@@ -27,80 +20,19 @@ export default function RealWindLayer() {
   const map = useMap();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
-  const gridDataRef = useRef<GridPoint[]>([]);
   const particlesRef = useRef<WindParticle[]>([]);
-  const { activeLayers, timelinePosition } = useMapStore();
+  const { activeLayers, timelinePosition, weatherGrid } = useMapStore();
 
   const windLayer = activeLayers.find(l => l.id === 'wind');
   const isEnabled = windLayer?.enabled || false;
   const opacity = windLayer?.opacity || 1;
 
+  // Re-initialize particles when grid data changes
   useEffect(() => {
-    if (!isEnabled) return;
-
-    let debounceTimer: NodeJS.Timeout;
-
-    const fetchGridData = async () => {
-      try {
-        const bounds = map.getBounds();
-        const zoom = map.getZoom();
-
-        // Denser grid for better interpolation (12x12 minimum)
-        const gridSize = zoom > 10 ? 15 : zoom > 7 ? 12 : 10;
-
-        const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
-        const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
-
-        console.log('🌬️ Fetching wind grid:', gridSize, 'x', gridSize);
-
-        const newGridData: GridPoint[] = [];
-        const promises: Promise<void>[] = [];
-
-        for (let i = 0; i <= gridSize; i++) {
-          for (let j = 0; j <= gridSize; j++) {
-            const lat = bounds.getSouth() + i * latStep;
-            const lon = bounds.getWest() + j * lonStep;
-
-            const promise = weatherCache.getForecast(lat, lon)
-              .then(forecast => {
-                newGridData.push({ lat, lon, forecast });
-              })
-              .catch(error => {
-                newGridData.push({ lat, lon, forecast: null });
-              });
-
-            promises.push(promise);
-          }
-        }
-
-        await Promise.all(promises);
-        gridDataRef.current = newGridData;
-
-        // Initialize particles when grid is loaded
-        initializeParticles();
-
-        console.log('🌬️ Wind grid loaded:', newGridData.length, 'points');
-      } catch (error) {
-        console.error('🌬️ Error fetching wind grid data:', error);
-      }
-    };
-
-    const debouncedFetch = () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(fetchGridData, 300);
-    };
-
-    fetchGridData();
-
-    map.on('moveend', debouncedFetch);
-    map.on('zoomend', debouncedFetch);
-
-    return () => {
-      clearTimeout(debounceTimer);
-      map.off('moveend', debouncedFetch);
-      map.off('zoomend', debouncedFetch);
-    };
-  }, [map, isEnabled]);
+    if (weatherGrid.length > 0) {
+      initializeParticles();
+    }
+  }, [weatherGrid]);
 
   // Initialize particle system (like Windy)
   const initializeParticles = () => {
@@ -125,14 +57,14 @@ export default function RealWindLayer() {
 
   // Bilinear interpolation to get wind at any screen position
   const getWindAtPoint = (x: number, y: number, selectedTime: Date): { speed: number; direction: number } | null => {
-    if (gridDataRef.current.length === 0) return null;
+    if (weatherGrid.length === 0) return null;
 
     // Convert screen coords to lat/lng
     const latLng = map.containerPointToLatLng([x, y]);
 
     // Find the 4 nearest grid points
     const bounds = map.getBounds();
-    const gridSize = Math.sqrt(gridDataRef.current.length) - 1;
+    const gridSize = Math.sqrt(weatherGrid.length) - 1;
 
     const latRange = bounds.getNorth() - bounds.getSouth();
     const lonRange = bounds.getEast() - bounds.getWest();
@@ -153,9 +85,9 @@ export default function RealWindLayer() {
     // Get wind data from 4 corners
     const getGridWind = (gx: number, gy: number) => {
       const idx = gy * (gridSize + 1) + gx;
-      if (idx < 0 || idx >= gridDataRef.current.length) return null;
+      if (idx < 0 || idx >= weatherGrid.length) return null;
 
-      const point = gridDataRef.current[idx];
+      const point = weatherGrid[idx];
       if (!point || !point.forecast) return null;
 
       const weather = getWeatherAtTime(point.forecast, selectedTime);
