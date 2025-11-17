@@ -8,6 +8,7 @@ import App from './App';
 import './index.css';
 import './styles/theme.css';
 import './styles/mobile.css'; // Optimisations mobiles
+import './styles/mobile-advanced.css'; // Optimisations avancées 2025
 import { registerServiceWorker, setupNetworkDetection, skipWaiting } from './utils/pwa';
 
 const queryClient = new QueryClient({

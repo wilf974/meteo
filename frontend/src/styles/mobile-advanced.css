@@ -1,0 +1,434 @@
+/* Optimisations mobiles AVANCÉES 2025 pour Météo Pro */
+/* Basé sur les dernières best practices Core Web Vitals, Touch UX, et PWA */
+
+/* ========================================
+   1. CORE WEB VITALS OPTIMIZATION 2025
+   ======================================== */
+
+/* LCP (Largest Contentful Paint) < 2.5s */
+/* Preload critical resources */
+link[rel="preload"] {
+  /* Géré dans index.html */
+}
+
+/* INP (Interaction to Next Paint) < 200ms - Remplace FID depuis mars 2024 */
+/* Optimiser toutes les interactions tactiles */
+button,
+a,
+[role="button"],
+input,
+select,
+textarea {
+  /* Désactiver le délai de 300ms sur mobile */
+  touch-action: manipulation;
+  /* Feedback visuel instantané */
+  transition: transform 0.1s ease, background-color 0.15s ease;
+}
+
+button:active,
+[role="button"]:active {
+  transform: scale(0.97);
+}
+
+/* CLS (Cumulative Layout Shift) < 0.1 */
+/* Réserver l'espace pour les images */
+img {
+  /* Aspect ratio pour éviter le layout shift */
+  aspect-ratio: attr(width) / attr(height);
+  height: auto;
+}
+
+/* Skeleton screens pour éviter le CLS */
+.skeleton-loader {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ========================================
+   2. TOUCH INTERACTIONS 2025
+   ======================================== */
+
+/* Zone du pouce (Thumb Zone) - Bottom 1/3 de l'écran */
+/* Les actions principales doivent être en bas */
+@media (max-width: 768px) {
+  .primary-action,
+  .bottom-nav,
+  .fab-button {
+    /* Accessible au pouce en bas de l'écran */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+
+  /* Zone de confort du pouce */
+  .thumb-zone {
+    padding-bottom: max(env(safe-area-inset-bottom), 16px);
+  }
+}
+
+/* Swipe Gestures - Pattern moderne 2025 */
+.swipeable {
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.swipeable:active {
+  cursor: grabbing;
+}
+
+/* Pull to Refresh */
+.pull-to-refresh {
+  overscroll-behavior-y: contain;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Haptic Feedback (vibration API) */
+@media (hover: none) and (pointer: coarse) {
+  .haptic-feedback:active {
+    /* Géré via JavaScript navigator.vibrate() */
+  }
+}
+
+/* ========================================
+   3. MODERN CSS 2025
+   ======================================== */
+
+/* CSS clamp() pour responsive fluide */
+:root {
+  --fluid-spacing: clamp(1rem, 2vw, 2rem);
+  --fluid-text: clamp(0.875rem, 1.5vw, 1rem);
+  --fluid-heading: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+/* Dynamic viewport units (dvh/dvw) pour navigateurs mobiles */
+@supports (height: 100dvh) {
+  .full-height {
+    height: 100dvh;
+  }
+}
+
+/* Container queries pour composants adaptatifs */
+@container (max-width: 400px) {
+  .card {
+    padding: 0.75rem;
+  }
+}
+
+/* ========================================
+   4. PERFORMANCE OPTIMIZATIONS
+   ======================================== */
+
+/* Content Visibility API pour lazy render */
+.lazy-render {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
+
+/* Priorité de chargement des images */
+img[loading="lazy"] {
+  content-visibility: auto;
+}
+
+img[fetchpriority="high"] {
+  /* Pour les images above the fold */
+}
+
+/* CSS containment pour isolation */
+.isolated-component {
+  contain: layout style paint;
+}
+
+/* Will-change pour animations performantes */
+.animated-element {
+  will-change: transform, opacity;
+}
+
+/* Après animation, retirer will-change */
+.animated-element:not(:hover):not(:active) {
+  will-change: auto;
+}
+
+/* ========================================
+   5. MICRO-INTERACTIONS 2025
+   ======================================== */
+
+/* Feedback visuel subtil sur tap */
+.interactive:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+/* Ripple effect au tap */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(0);
+  animation: ripple-animation 0.6s ease-out;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   6. ACCESSIBILITY & TOUCH
+   ======================================== */
+
+/* Focus visible pour navigation clavier */
+:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Pas d'outline au touch */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Indicateur de chargement accessible */
+.loading-indicator {
+  /* Accessibilité pour lecteurs d'écran */
+  speak: assertive;
+  aria-live: polite;
+}
+
+/* ========================================
+   7. FOLDABLE DEVICES SUPPORT 2025
+   ======================================== */
+
+/* Media queries pour foldables */
+@media (horizontal-viewport-segments: 2) {
+  .dual-screen-layout {
+    display: grid;
+    grid-template-columns: env(viewport-segment-width 0 0) env(viewport-segment-width 1 0);
+  }
+}
+
+/* Screen spanning */
+@media (spanning: single-fold-vertical) {
+  .content {
+    /* Adapter le layout pour le pli vertical */
+  }
+}
+
+/* ========================================
+   8. REDUCED MOTION 2025
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ========================================
+   9. DARK MODE OPTIMIZATION
+   ======================================== */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    /* Optimiser le contraste pour WCAG AAA */
+  }
+
+  /* Réduire la luminosité des blancs en dark mode */
+  img, video {
+    filter: brightness(0.9);
+  }
+}
+
+/* ========================================
+   10. NETWORK-AWARE COMPONENTS
+   ======================================== */
+
+/* Adapter selon la connexion (via JS + CSS classes) */
+.slow-connection .high-quality-image {
+  display: none;
+}
+
+.slow-connection .low-quality-image {
+  display: block;
+}
+
+/* Save data mode */
+@media (prefers-reduced-data: reduce) {
+  .data-heavy {
+    display: none;
+  }
+}
+
+/* ========================================
+   11. GESTURE INDICATORS
+   ======================================== */
+
+/* Indicateur de swipe */
+.swipe-indicator {
+  position: relative;
+}
+
+.swipe-indicator::after {
+  content: '⇄';
+  position: absolute;
+  right: 1rem;
+  opacity: 0.3;
+  animation: swipe-hint 2s infinite;
+}
+
+@keyframes swipe-hint {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+}
+
+/* ========================================
+   12. BOTTOM SHEET PATTERN
+   ======================================== */
+
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 16px 16px 0 0;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.bottom-sheet.open {
+  transform: translateY(0);
+}
+
+/* Handle pour drag */
+.bottom-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  margin: 8px auto;
+  cursor: grab;
+}
+
+/* ========================================
+   13. FLOATING ACTION BUTTON (FAB)
+   ======================================== */
+
+.fab {
+  position: fixed;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fab:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.6);
+}
+
+/* ========================================
+   14. SCROLL SNAP FOR CAROUSELS
+   ======================================== */
+
+.snap-scroll {
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.snap-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.snap-scroll > * {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* ========================================
+   15. NATIVE-LIKE SCROLLING
+   ======================================== */
+
+/* Momentum scrolling sur iOS */
+.native-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Smooth scroll sur tous les navigateurs */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ========================================
+   16. PERFORMANCE MONITORING
+   ======================================== */
+
+/* Mark pour Performance API */
+[data-perf-mark] {
+  /* Utilisé avec performance.mark() en JS */
+}
+
+/* ========================================
+   17. PRINT STYLES (Bonus)
+   ======================================== */
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+}
