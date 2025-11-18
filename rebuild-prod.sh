@@ -18,45 +18,59 @@ fi
 echo "✅ Répertoire correct: $(pwd)"
 echo ""
 
-# 1. Arrêter les conteneurs
+# 1. Arrêter TOUS les conteneurs (y compris ceux du profil production)
 echo "📦 Arrêt des conteneurs..."
+docker-compose --profile production down
 docker-compose down
 echo ""
 
-# 2. Supprimer l'ancienne image frontend (force rebuild)
-echo "🗑️  Suppression de l'ancienne image frontend..."
-docker rmi meteo-frontend 2>/dev/null || echo "   Image frontend déjà supprimée"
+# 2. Supprimer les anciennes images (force rebuild complet)
+echo "🗑️  Suppression des anciennes images..."
+docker rmi meteo-frontend meteo-backend 2>/dev/null || echo "   Images déjà supprimées"
 echo ""
 
 # 3. Rebuild avec configuration production
 echo "🏗️  Rebuild avec configuration PRODUCTION..."
 echo "   ⚠️  Ceci peut prendre 2-5 minutes..."
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache frontend
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml build backend
+echo ""
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
 echo ""
 
-# 4. Démarrer en production
-echo "🚀 Démarrage en mode production..."
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# 4. Démarrer en production AVEC le profil production pour nginx
+echo "🚀 Démarrage en mode production (avec nginx)..."
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d
 echo ""
 
 # 5. Attendre le démarrage
-echo "⏳ Attente du démarrage (10 secondes)..."
-sleep 10
+echo "⏳ Attente du démarrage (15 secondes)..."
+sleep 15
 echo ""
 
 # 6. Vérifier le statut
 echo "📊 Statut des conteneurs:"
-docker-compose ps
+docker-compose --profile production ps
+echo ""
+
+# 7. Vérification rapide du frontend
+echo "🔍 Vérification du build frontend:"
+if docker exec meteo-frontend test -f /usr/share/nginx/html/index.html 2>/dev/null; then
+    echo "   ✅ Frontend = Build production (Nginx)"
+else
+    echo "   ⚠️  Frontend = Mode développement (Vite)"
+fi
 echo ""
 
 echo "✅ Rebuild terminé!"
 echo ""
-echo "🔍 Vérification:"
+echo "🔍 Vérification dans le navigateur:"
 echo "   1. Ouvrir: https://meteoproapp.woutils.com"
 echo "   2. Ouvrir la console navigateur (F12)"
 echo "   3. Vérifier: '🔌 Connecting to WebSocket: https://meteoproapp.woutils.com'"
+echo "   4. NE DOIT PAS afficher: '[vite] connecting...'"
 echo ""
-echo "📝 Voir les logs frontend:"
-echo "   docker-compose logs -f frontend"
+echo "📝 Commandes utiles:"
+echo "   Logs frontend:  docker-compose logs -f frontend"
+echo "   Logs backend:   docker-compose logs -f backend"
+echo "   Logs nginx:     docker-compose logs -f nginx"
+echo "   Diagnostic:     ./check-containers.sh"
 echo ""
