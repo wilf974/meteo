@@ -21,6 +21,8 @@ export default function RealWindLayer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const particlesRef = useRef<WindParticle[]>([]);
+  const drawLoggedRef = useRef<boolean>(false); // Track if first frame logged
+  const frameCountRef = useRef<number>(0); // Track frame count for periodic logging
   const { activeLayers, activeMode, timelinePosition, weatherGrid } = useMapStore();
 
   const windLayer = activeLayers.find(l => l.id === 'wind');
@@ -168,14 +170,14 @@ export default function RealWindLayer() {
       const selectedTime = new Date(timelinePosition);
 
       // DEBUG: Log première frame
-      if (!draw.logged) {
+      if (!drawLoggedRef.current) {
         console.log('💨 Drawing wind particles:', {
           particleCount: particlesRef.current.length,
           canvasSize: `${canvas.width}x${canvas.height}`,
           weatherGridLength: weatherGrid.length,
           selectedTime
         });
-        draw.logged = true;
+        drawLoggedRef.current = true;
       }
 
       // Subtle fade effect for trails (like Windy) - very transparent to avoid darkening
@@ -255,9 +257,8 @@ export default function RealWindLayer() {
       });
 
       // DEBUG: Log stats periodically
-      if (!draw.frameCount) draw.frameCount = 0;
-      draw.frameCount++;
-      if (draw.frameCount % 60 === 0) {
+      frameCountRef.current++;
+      if (frameCountRef.current % 60 === 0) {
         console.log('💨 Wind stats:', {
           particlesWithWind,
           totalParticles: particlesRef.current.length,

@@ -18,6 +18,8 @@ export default function RealPrecipitationLayer() {
   const animationRef = useRef<number>();
   const rainDropsRef = useRef<RainDrop[]>([]);
   const animationOffsetRef = useRef<number>(0); // Smooth animation offset for movement
+  const drawLoggedRef = useRef<boolean>(false); // Track if first frame logged
+  const frameCountRef = useRef<number>(0); // Track frame count for periodic logging
   const { activeLayers, activeMode, timelinePosition, weatherGrid } = useMapStore();
 
   const precipLayer = activeLayers.find(l => l.id === 'precipitation');
@@ -71,14 +73,14 @@ export default function RealPrecipitationLayer() {
       const gridSize = Math.sqrt(weatherGrid.length) - 1;
 
       // DEBUG: Log première frame
-      if (!draw.logged) {
+      if (!drawLoggedRef.current) {
         console.log('🌧️ Drawing precipitation:', {
           gridSize,
           totalPoints: weatherGrid.length,
           canvasSize: `${canvas.width}x${canvas.height}`,
           selectedTime
         });
-        draw.logged = true;
+        drawLoggedRef.current = true;
       }
 
       // Create a CONTINUOUS precipitation heatmap like Windy
@@ -254,9 +256,8 @@ export default function RealPrecipitationLayer() {
       }
 
       // DEBUG: Log stats periodically
-      if (!draw.frameCount) draw.frameCount = 0;
-      draw.frameCount++;
-      if (draw.frameCount % 60 === 0) {
+      frameCountRef.current++;
+      if (frameCountRef.current % 60 === 0) {
         console.log('🌧️ Precipitation stats:', {
           pixelsDrawn,
           totalPrecipitation: totalPrecipitation.toFixed(2),
