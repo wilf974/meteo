@@ -15,7 +15,8 @@ services:
     restart: always
     volumes:
       - redis_data_prod:/data
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    # Pas de mot de passe Redis en interne (accessible uniquement depuis les containers Docker)
+    command: redis-server
 
   backend:
     build:
@@ -26,7 +27,7 @@ services:
       NODE_ENV: production
       DATABASE_HOST: postgres
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # REDIS_PASSWORD non nécessaire en interne
       CORS_ORIGIN: https://meteoproapp.woutils.com
       DB_SYNCHRONIZE: "true"
     volumes:
