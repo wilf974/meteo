@@ -2,7 +2,7 @@ import { useState, useEffect, memo, useCallback, useMemo } from 'react';
 import { useTimelineControls } from '../../store/mapSelectors';
 import { useThemeStore } from '../../store/themeStore';
 import { Play, Pause, SkipBack, SkipForward, Clock } from 'lucide-react';
-import { format, addHours, subHours, differenceInHours } from 'date-fns';
+import { format, addHours, subHours, differenceInHours, addMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 /**
@@ -39,7 +39,7 @@ const TimelineMobile = memo(function TimelineMobile() {
   useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
-      const newTime = addHours(timelinePosition, 1);
+      const newTime = addMinutes(timelinePosition, 1); // Avance minute par minute
       if (newTime <= maxDate) {
         setTimelinePosition(newTime);
       } else {

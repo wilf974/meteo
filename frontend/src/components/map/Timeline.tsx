@@ -2,7 +2,7 @@ import { useState, useEffect, memo, useCallback, useMemo } from 'react';
 import { useTimelineControls } from '../../store/mapSelectors';
 import { useThemeStore } from '../../store/themeStore';
 import { Play, Pause, SkipBack, SkipForward, Clock, Moon, Sun, Zap } from 'lucide-react';
-import { format, addHours, subHours, differenceInHours } from 'date-fns';
+import { format, addHours, subHours, differenceInHours, addMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const Timeline = memo(function Timeline() {
@@ -48,7 +48,7 @@ const Timeline = memo(function Timeline() {
   const currentHours = useMemo(() => differenceInHours(timelinePosition, minDate), [timelinePosition, minDate]);
   const sliderValue = useMemo(() => (currentHours / totalHours) * 100, [currentHours, totalHours]);
 
-  // Animation automatique with speed control
+  // Animation automatique with speed control - minute par minute
   useEffect(() => {
     if (!isPlaying) return;
 
@@ -56,7 +56,7 @@ const Timeline = memo(function Timeline() {
     const intervalDuration = baseInterval / playSpeed;
 
     const interval = setInterval(() => {
-      const newTime = addHours(timelinePosition, 1);
+      const newTime = addMinutes(timelinePosition, 1); // Avance minute par minute
       if (newTime <= maxDate) {
         setTimelinePosition(newTime);
       } else {
