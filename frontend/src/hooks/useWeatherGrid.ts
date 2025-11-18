@@ -13,7 +13,7 @@ import { websocketService } from '../services/websocket.service';
  */
 export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
   const { setWeatherGrid, setIsLoadingGrid } = useMapStore();
-  const fetchTimeoutRef = useRef<NodeJS.Timeout>();
+  const fetchTimeoutRef = useRef<number>();
   const isLoadingRef = useRef(false);
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
       return;
     }
 
-    let debounceTimer: NodeJS.Timeout;
+    let debounceTimer: number;
 
     const fetchGridData = async () => {
       // Prevent concurrent fetches

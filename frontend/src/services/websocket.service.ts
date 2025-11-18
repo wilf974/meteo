@@ -32,7 +32,7 @@ interface WeatherGridResponse {
 class WebSocketService {
   private socket: Socket | null = null;
   private connected: boolean = false;
-  private pendingRequests: Map<string, { resolve: (value: any) => void; reject: (error: any) => void; timeout: NodeJS.Timeout }> = new Map();
+  private pendingRequests: Map<string, { resolve: (value: any) => void; reject: (error: any) => void; timeout: number }> = new Map();
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
   private reconnectDelay: number = 1000; // Start with 1 second

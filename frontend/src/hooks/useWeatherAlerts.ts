@@ -10,7 +10,7 @@ import { startAlertMonitoring, stopAlertMonitoring, DEFAULT_THRESHOLDS } from '.
  */
 export function useWeatherAlerts(enabled: boolean = true, intervalMinutes: number = 30) {
   const favorites = useFavoritesStore(state => state.favorites);
-  const intervalIdRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     // Ne rien faire si désactivé

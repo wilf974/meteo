@@ -228,7 +228,7 @@ export function startAlertMonitoring(
   favorites: FavoriteLocation[],
   intervalMinutes: number = 30,
   thresholds?: AlertThresholds
-): NodeJS.Timeout {
+): number {
   console.log(`🚀 Démarrage du monitoring d'alertes (intervalle: ${intervalMinutes} minutes)`);
 
   // Vérification immédiate
@@ -245,7 +245,7 @@ export function startAlertMonitoring(
 /**
  * Arrête le monitoring
  */
-export function stopAlertMonitoring(intervalId: NodeJS.Timeout): void {
+export function stopAlertMonitoring(intervalId: number): void {
   clearInterval(intervalId);
   console.log('🛑 Monitoring d\'alertes arrêté');
 }
