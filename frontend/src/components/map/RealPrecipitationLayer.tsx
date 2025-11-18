@@ -67,7 +67,7 @@ export default function RealPrecipitationLayer() {
 
       // Draw continuous precipitation field using interpolation
       // Divide canvas into a dense grid of pixels for smooth rendering
-      const resolution = 8; // Size of each "pixel" in the heatmap (smaller = more detail)
+      const resolution = 16; // Optimized: 16px instead of 8px (4x faster rendering!)
 
       for (let y = 0; y < canvas.height; y += resolution) {
         for (let x = 0; x < canvas.width; x += resolution) {

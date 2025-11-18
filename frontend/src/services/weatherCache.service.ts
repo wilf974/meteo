@@ -23,8 +23,8 @@ interface CacheStats {
 class WeatherCacheService {
   private cache = new Map<string, CacheEntry>();
   private airQualityCache = new Map<string, AirQualityCacheEntry>();
-  private CACHE_DURATION = 10 * 60 * 1000; // 10 minutes (increased from 5)
-  private MAX_CACHE_SIZE = 1000; // Maximum cache entries
+  private CACHE_DURATION = 15 * 60 * 1000; // OPTIMIZED: 15 minutes (was 10)
+  private MAX_CACHE_SIZE = 2000; // OPTIMIZED: 2000 entries (was 1000)
   private pendingRequests = new Map<string, Promise<ForecastResponse>>();
   private pendingAirQualityRequests = new Map<string, Promise<AirQualityResponse>>();
   private stats = { hits: 0, misses: 0 };
@@ -39,9 +39,10 @@ class WeatherCacheService {
   }
 
   private getCacheKey(lat: number, lon: number): string {
-    // Round to 2 decimal places to group nearby locations
-    const roundedLat = Math.round(lat * 100) / 100;
-    const roundedLon = Math.round(lon * 100) / 100;
+    // OPTIMIZED: Round to 1 decimal place for better cache hit rate
+    // ~11km precision is enough for weather data
+    const roundedLat = Math.round(lat * 10) / 10;
+    const roundedLon = Math.round(lon * 10) / 10;
     return `${roundedLat},${roundedLon}`;
   }
 

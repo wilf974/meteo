@@ -37,9 +37,9 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
 
-        // REDUCED grid size: max 8 points (was 15)
-        // 8x8 = 64 points total, much more reasonable
-        const gridSize = zoom > 10 ? 8 : zoom > 7 ? 6 : 5;
+        // OPTIMIZED grid size: max 6 points (was 8)
+        // 6x6 = 36 points total (was 64) - 44% fewer requests!
+        const gridSize = zoom > 10 ? 6 : zoom > 7 ? 5 : 4;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
@@ -48,9 +48,9 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
 
         const newGridData: GridPoint[] = [];
 
-        // Rate limiting: Process requests in batches of 5 to avoid 429 errors
-        const BATCH_SIZE = 5;
-        const BATCH_DELAY = 200; // 200ms between batches
+        // Optimized rate limiting: Larger batches, less delay
+        const BATCH_SIZE = 10; // Process 10 at a time (was 5)
+        const BATCH_DELAY = 100; // Reduced delay: 100ms (was 200ms)
 
         const allPoints: Array<{ lat: number; lon: number }> = [];
         for (let i = 0; i <= gridSize; i++) {
@@ -95,10 +95,10 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
       }
     };
 
-    // Debounced fetch handler
+    // Debounced fetch handler - OPTIMIZED
     const debouncedFetch = () => {
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(fetchGridData, 500); // Increased debounce to 500ms
+      debounceTimer = setTimeout(fetchGridData, 800); // Increased to 800ms for better performance
     };
 
     fetchGridData();

@@ -215,9 +215,9 @@ export default function RealWindLayer() {
       });
     };
 
-    // Animate at 30fps for smooth particle motion
+    // Optimized: 24fps instead of 30fps (20% less CPU usage)
     let lastFrameTime = 0;
-    const targetFPS = 30;
+    const targetFPS = 24;
     const frameInterval = 1000 / targetFPS;
 
     const animate = (currentTime: number) => {
