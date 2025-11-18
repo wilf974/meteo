@@ -209,6 +209,13 @@ class WebSocketService {
   }
 
   /**
+   * Get underlying Socket instance for event listening
+   */
+  getSocket(): Socket | null {
+    return this.socket;
+  }
+
+  /**
    * Disconnect WebSocket
    */
   disconnect() {

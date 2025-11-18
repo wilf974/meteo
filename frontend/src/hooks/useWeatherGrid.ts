@@ -23,6 +23,7 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
     }
 
     let debounceTimer: number;
+    let isFirstFetch = true;
 
     const fetchGridData = async () => {
       // Prevent concurrent fetches
@@ -33,8 +34,12 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
 
       // Check WebSocket connection
       if (!websocketService.isConnected()) {
-        console.warn('⚠️ WebSocket not connected, attempting reconnection...');
-        websocketService.reconnect();
+        console.warn('⚠️ WebSocket not connected, will retry when connected...');
+        // On first mount, attempt reconnection
+        if (isFirstFetch) {
+          websocketService.reconnect();
+          isFirstFetch = false;
+        }
         return;
       }
 
@@ -105,6 +110,28 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
 
     map.on('moveend', debouncedFetch);
     map.on('zoomend', debouncedFetch);
+
+    // CRITICAL FIX: Listen for WebSocket connection and fetch data when connected
+    // This ensures data loads even if WebSocket connects AFTER component mounts
+    const socket = websocketService.getSocket();
+    if (socket) {
+      const onConnect = () => {
+        console.log('🔄 WebSocket connected, fetching grid data...');
+        fetchGridData();
+      };
+      socket.on('connect', onConnect);
+
+      // Cleanup
+      return () => {
+        clearTimeout(debounceTimer);
+        map.off('moveend', debouncedFetch);
+        map.off('zoomend', debouncedFetch);
+        if (socket) {
+          socket.off('connect', onConnect);
+        }
+        isLoadingRef.current = false;
+      };
+    }
 
     return () => {
       clearTimeout(debounceTimer);
