@@ -17,6 +17,7 @@ export default function RealPrecipitationLayer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const rainDropsRef = useRef<RainDrop[]>([]);
+  const animationOffsetRef = useRef<number>(0); // Smooth animation offset for movement
   const { activeLayers, activeMode, timelinePosition, weatherGrid } = useMapStore();
 
   const precipLayer = activeLayers.find(l => l.id === 'precipitation');
@@ -50,24 +51,32 @@ export default function RealPrecipitationLayer() {
       // Create a CONTINUOUS precipitation heatmap like Windy
       // Instead of drawing circles, we'll draw a smooth continuous field
 
-      // Helper function to get precipitation at grid point
-      const getPrecipAtGridPoint = (gx: number, gy: number) => {
-        if (gx < 0 || gy < 0 || gx > gridSize || gy > gridSize) return 0;
+      // Helper function to get precipitation AND wind at grid point
+      const getWeatherAtGridPoint = (gx: number, gy: number) => {
+        if (gx < 0 || gy < 0 || gx > gridSize || gy > gridSize) return null;
         const idx = gy * (gridSize + 1) + gx;
-        if (idx < 0 || idx >= weatherGrid.length) return 0;
+        if (idx < 0 || idx >= weatherGrid.length) return null;
 
         const point = weatherGrid[idx];
-        if (!point || !point.forecast) return 0;
+        if (!point || !point.forecast) return null;
 
         const weatherData = getWeatherAtTime(point.forecast, selectedTime);
-        if (!weatherData) return 0;
+        if (!weatherData) return null;
 
-        return weatherData.precipitation + weatherData.rain + weatherData.showers;
+        return {
+          precipitation: weatherData.precipitation + weatherData.rain + weatherData.showers,
+          windSpeed: weatherData.windSpeed,
+          windDirection: weatherData.windDirection,
+        };
       };
 
       // Draw continuous precipitation field using interpolation
       // Divide canvas into a dense grid of pixels for smooth rendering
       const resolution = 16; // Optimized: 16px instead of 8px (4x faster rendering!)
+
+      // Increment animation offset for smooth movement (loops every 100 units)
+      animationOffsetRef.current = (animationOffsetRef.current + 0.015) % 100;
+      const animOffset = animationOffsetRef.current;
 
       for (let y = 0; y < canvas.height; y += resolution) {
         for (let x = 0; x < canvas.width; x += resolution) {
@@ -78,8 +87,12 @@ export default function RealPrecipitationLayer() {
           const normLat = (latLng.lat - bounds.getSouth()) / (bounds.getNorth() - bounds.getSouth());
           const normLon = (latLng.lng - bounds.getWest()) / (bounds.getEast() - bounds.getWest());
 
-          const gridX = normLon * gridSize;
-          const gridY = normLat * gridSize;
+          // Apply smooth animation offset for fluid movement (like real radar)
+          // The offset creates a "flowing" effect that simulates weather system movement
+          const offsetScale = animOffset * 0.08; // Subtle continuous movement
+
+          let gridX = normLon * gridSize + offsetScale;
+          let gridY = normLat * gridSize + offsetScale * 0.5; // Slightly different Y offset for natural look
 
           // Get the 4 surrounding grid points
           const x0 = Math.floor(gridX);
@@ -87,15 +100,23 @@ export default function RealPrecipitationLayer() {
           const x1 = x0 + 1;
           const y1 = y0 + 1;
 
-          // Get precipitation values at the 4 corners
-          const p00 = getPrecipAtGridPoint(x0, y0);
-          const p10 = getPrecipAtGridPoint(x1, y0);
-          const p01 = getPrecipAtGridPoint(x0, y1);
-          const p11 = getPrecipAtGridPoint(x1, y1);
+          // Get weather data at the 4 corners
+          const w00 = getWeatherAtGridPoint(x0, y0);
+          const w10 = getWeatherAtGridPoint(x1, y0);
+          const w01 = getWeatherAtGridPoint(x0, y1);
+          const w11 = getWeatherAtGridPoint(x1, y1);
 
-          // Bilinear interpolation
+          if (!w00 && !w10 && !w01 && !w11) continue;
+
+          // Get interpolation factors
           const fx = gridX - x0;
           const fy = gridY - y0;
+
+          // Bilinear interpolation for precipitation
+          const p00 = w00?.precipitation || 0;
+          const p10 = w10?.precipitation || 0;
+          const p01 = w01?.precipitation || 0;
+          const p11 = w11?.precipitation || 0;
 
           const precip = (
             p00 * (1 - fx) * (1 - fy) +
