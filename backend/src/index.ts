@@ -56,6 +56,9 @@ app.use(`/api/${process.env.API_VERSION || 'v1'}`, routes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+// Import OpenMeteo service
+import { openMeteoService } from './services/openMeteo.service';
+
 // WebSocket
 io.on('connection', (socket) => {
   logger.info(`Client connecté: ${socket.id}`);
@@ -79,6 +82,77 @@ io.on('connection', (socket) => {
       userId: socket.id,
       position: data.position
     });
+  });
+
+  // Weather forecast request (single location)
+  socket.on('weather:request', async (request: {
+    requestId: string;
+    latitude: number;
+    longitude: number;
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    try {
+      const startDate = request.startDate ? new Date(request.startDate) : undefined;
+      const endDate = request.endDate ? new Date(request.endDate) : undefined;
+
+      const data = await openMeteoService.getForecast(
+        request.latitude,
+        request.longitude,
+        startDate,
+        endDate
+      );
+
+      socket.emit('weather:response', {
+        requestId: request.requestId,
+        data,
+        cached: false, // Will be true if from cache
+      });
+    } catch (error: any) {
+      logger.error(`Error processing weather request:`, error);
+      socket.emit('weather:error', {
+        requestId: request.requestId,
+        error: error.message || 'Failed to fetch weather data',
+      });
+    }
+  });
+
+  // Weather grid request (multiple locations - optimized)
+  socket.on('weather:grid:request', async (request: {
+    requestId: string;
+    points: Array<{ lat: number; lon: number }>;
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    try {
+      const startDate = request.startDate ? new Date(request.startDate) : undefined;
+      const endDate = request.endDate ? new Date(request.endDate) : undefined;
+
+      const results = await openMeteoService.getWeatherGrid(
+        request.points,
+        startDate,
+        endDate
+      );
+
+      // Count cached vs fresh requests
+      const cachedCount = results.filter(r => r.cached).length;
+      const freshCount = results.length - cachedCount;
+
+      socket.emit('weather:grid:response', {
+        requestId: request.requestId,
+        results,
+        cached: cachedCount,
+        fresh: freshCount,
+      });
+
+      logger.info(`Grid request: ${cachedCount} cached, ${freshCount} fresh (total: ${results.length})`);
+    } catch (error: any) {
+      logger.error(`Error processing weather grid request:`, error);
+      socket.emit('weather:error', {
+        requestId: request.requestId,
+        error: error.message || 'Failed to fetch weather grid',
+      });
+    }
   });
 
   socket.on('disconnect', () => {

@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
 import { useMapStore, type GridPoint } from '../store/mapStore';
-import { weatherCache } from '../services/weatherCache.service';
+import { websocketService } from '../services/websocket.service';
 
 /**
  * Hook centralisé pour gérer la grille météo partagée entre tous les layers
- * - Réduit le nombre de requêtes en centralisant la récupération
- * - Implémente un rate limiter pour éviter les erreurs 429
- * - Ajoute un retry avec exponential backoff
+ * - Utilise WebSocket pour une récupération ultra-rapide
+ * - Une seule requête batch pour toute la grille (au lieu de 36+ requêtes HTTP)
+ * - Cache Redis côté backend pour performance maximale
+ * - Pas de rate limiting grâce au traitement batch côté serveur
  * - Stocke les données dans le store pour partage entre layers
  */
 export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
@@ -30,6 +31,13 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
         return;
       }
 
+      // Check WebSocket connection
+      if (!websocketService.isConnected()) {
+        console.warn('⚠️ WebSocket not connected, attempting reconnection...');
+        websocketService.reconnect();
+        return;
+      }
+
       try {
         isLoadingRef.current = true;
         setIsLoadingGrid(true);
@@ -37,20 +45,14 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
 
-        // OPTIMIZED grid size: max 6 points (was 8)
-        // 6x6 = 36 points total (was 64) - 44% fewer requests!
-        const gridSize = zoom > 10 ? 6 : zoom > 7 ? 5 : 4;
+        // OPTIMIZED grid size: Can use larger grids now with WebSocket!
+        // 8x8 = 64 points, but sent as ONE WebSocket request
+        const gridSize = zoom > 10 ? 8 : zoom > 7 ? 6 : 4;
 
         const latStep = (bounds.getNorth() - bounds.getSouth()) / gridSize;
         const lonStep = (bounds.getEast() - bounds.getWest()) / gridSize;
 
-        console.log('🌐 Fetching SHARED weather grid:', gridSize, 'x', gridSize, '=', (gridSize + 1) * (gridSize + 1), 'points');
-
-        const newGridData: GridPoint[] = [];
-
-        // Optimized rate limiting: Larger batches, less delay
-        const BATCH_SIZE = 10; // Process 10 at a time (was 5)
-        const BATCH_DELAY = 100; // Reduced delay: 100ms (was 200ms)
+        console.log(`🚀 WebSocket grid request: ${gridSize}x${gridSize} = ${(gridSize + 1) * (gridSize + 1)} points`);
 
         const allPoints: Array<{ lat: number; lon: number }> = [];
         for (let i = 0; i <= gridSize; i++) {
@@ -61,33 +63,31 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
           }
         }
 
-        // Process in batches with delay
-        for (let i = 0; i < allPoints.length; i += BATCH_SIZE) {
-          const batch = allPoints.slice(i, i + BATCH_SIZE);
+        const startTime = performance.now();
 
-          const batchPromises = batch.map(({ lat, lon }) =>
-            retryWithBackoff(() => weatherCache.getForecast(lat, lon), 3)
-              .then(forecast => {
-                newGridData.push({ lat, lon, forecast });
-              })
-              .catch(error => {
-                console.warn(`Failed to fetch grid point (${lat}, ${lon}):`, error.message);
-                newGridData.push({ lat, lon, forecast: null });
-              })
-          );
+        // SINGLE WebSocket request for entire grid! 🚀
+        const response = await websocketService.getWeatherGrid(allPoints);
 
-          await Promise.all(batchPromises);
+        const endTime = performance.now();
+        const duration = Math.round(endTime - startTime);
 
-          // Add delay between batches (except for last batch)
-          if (i + BATCH_SIZE < allPoints.length) {
-            await delay(BATCH_DELAY);
-          }
-        }
+        // Convert response to GridPoint format
+        const newGridData: GridPoint[] = response.results.map(result => ({
+          lat: result.lat,
+          lon: result.lon,
+          forecast: result.forecast,
+        }));
 
         setWeatherGrid(newGridData);
-        console.log('✅ Shared weather grid loaded:', newGridData.length, 'points');
-      } catch (error) {
-        console.error('❌ Error fetching shared weather grid:', error);
+
+        console.log(
+          `✅ Grid loaded via WebSocket in ${duration}ms | ` +
+          `${response.cached} cached, ${response.fresh} fresh | ` +
+          `${newGridData.length} points total`
+        );
+      } catch (error: any) {
+        console.error('❌ WebSocket grid error:', error.message);
+        // Fallback: Clear grid on error
         setWeatherGrid([]);
       } finally {
         isLoadingRef.current = false;
@@ -95,10 +95,10 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
       }
     };
 
-    // Debounced fetch handler - OPTIMIZED
+    // Debounced fetch handler
     const debouncedFetch = () => {
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(fetchGridData, 800); // Increased to 800ms for better performance
+      debounceTimer = setTimeout(fetchGridData, 500); // Reduced to 500ms (was 800ms) - WebSocket is faster!
     };
 
     fetchGridData();
@@ -115,42 +115,5 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
   }, [map, enabled, setWeatherGrid, setIsLoadingGrid]);
 }
 
-/**
- * Retry a function with exponential backoff
- * Useful for handling 429 (Too Many Requests) errors
- */
-async function retryWithBackoff<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 3,
-  baseDelay: number = 1000
-): Promise<T> {
-  let lastError: any;
-
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await fn();
-    } catch (error: any) {
-      lastError = error;
-
-      // Check if it's a 429 error
-      if (error?.response?.status === 429 || error?.status === 429) {
-        const retryDelay = baseDelay * Math.pow(2, i); // Exponential backoff: 1s, 2s, 4s
-        console.warn(`⏳ Rate limited (429), retrying in ${retryDelay}ms... (attempt ${i + 1}/${maxRetries})`);
-        await delay(retryDelay);
-      } else {
-        // For non-429 errors, throw immediately
-        throw error;
-      }
-    }
-  }
-
-  // If we've exhausted all retries, throw the last error
-  throw lastError;
-}
-
-/**
- * Promise-based delay helper
- */
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+// No more rate limiting issues with WebSocket! 🚀
+// All helper functions removed - WebSocket handles everything
