@@ -42,13 +42,31 @@ class WebSocketService {
   }
 
   private connect() {
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    // Auto-detect backend URL based on environment
+    let backendUrl: string;
+
+    if (import.meta.env.VITE_API_URL) {
+      // Use explicit environment variable if set
+      backendUrl = import.meta.env.VITE_API_URL;
+    } else if (import.meta.env.PROD) {
+      // In production, use same host/protocol as frontend (relative path)
+      // This works when frontend and backend are on same domain
+      backendUrl = window.location.origin;
+    } else {
+      // In development, default to localhost:5001
+      backendUrl = 'http://localhost:5001';
+    }
+
+    console.log(`🔌 Connecting to WebSocket: ${backendUrl}`);
 
     this.socket = io(backendUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: this.reconnectDelay,
       reconnectionAttempts: this.maxReconnectAttempts,
+      // Socket.IO will auto-upgrade to WebSocket and use correct protocol (ws/wss)
+      upgrade: true,
+      rememberUpgrade: true,
     });
 
     this.socket.on('connect', () => {
