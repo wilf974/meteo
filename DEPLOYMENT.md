@@ -1,4 +1,59 @@
-# 🚀 Guide de Déploiement VPS - MeteoProApp
+# 🚀 Guide de Déploiement - MeteoProApp
+
+Guide complet pour déployer MeteoProApp en production avec WebSocket HTTPS.
+
+## ⚠️ IMPORTANT : Fix WebSocket HTTPS (Production Docker)
+
+Si vous voyez dans la console navigateur :
+```
+🔌 Connecting to WebSocket: http://backend:5001
+Blocage du chargement du contenu mixte actif (mixed active content)
+```
+
+**Cause** : Le frontend a été build avec les URLs de développement au lieu des URLs HTTPS de production.
+
+**Solution** : Rebuild avec la configuration production :
+
+```bash
+# 1. Arrêter les conteneurs
+docker-compose down
+
+# 2. Rebuild avec la configuration production (IMPORTANT : les deux fichiers !)
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
+
+# 3. Redémarrer avec la configuration production
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# 4. Vérifier les logs
+docker-compose logs -f frontend | head -20
+```
+
+**Vérification** : Ouvrir https://meteoproapp.woutils.com et vérifier dans la console :
+```
+🔌 Connecting to WebSocket: https://meteoproapp.woutils.com
+✅ WebSocket connecté
+```
+
+### Pourquoi les deux fichiers compose ?
+
+- **`docker-compose.yml`** : Configuration de base (services, ports, réseau)
+- **`docker-compose.prod.yml`** : Overrides production (build args HTTPS, certificats SSL)
+
+Le `docker-compose.prod.yml` définit :
+```yaml
+frontend:
+  build:
+    dockerfile: Dockerfile.prod
+    args:
+      VITE_API_URL: https://meteoproapp.woutils.com  # ← URLs HTTPS
+      VITE_WS_URL: wss://meteoproapp.woutils.com
+```
+
+Ces build args sont **baked into** le build statique du frontend. Utiliser seulement `docker-compose.yml` va build avec les URLs de développement `http://backend:5001` !
+
+---
+
+# Guide Déploiement VPS Complet
 
 Guide complet pour déployer MeteoProApp sur votre VPS avec HTTPS.
 
@@ -19,7 +74,7 @@ Valeur: 168.231.84.168
 TTL: 300
 ```
 
-Votre domaine sera: `meteoproapp.votredomaine.com`
+Votre domaine : `meteoproapp.woutils.com` (ou remplacez par votre propre domaine)
 
 ### Ports
 Les ports suivants doivent être ouverts:
