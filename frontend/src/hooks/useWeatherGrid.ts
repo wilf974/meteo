@@ -50,6 +50,15 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
 
+        console.log('🗺️ Map bounds:', {
+          north: bounds.getNorth(),
+          south: bounds.getSouth(),
+          east: bounds.getEast(),
+          west: bounds.getWest(),
+          center: map.getCenter(),
+          zoom
+        });
+
         // OPTIMIZED grid size: Can use larger grids now with WebSocket!
         // 8x8 = 64 points, but sent as ONE WebSocket request
         const gridSize = zoom > 10 ? 8 : zoom > 7 ? 6 : 4;
