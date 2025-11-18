@@ -86,6 +86,7 @@ volumes:
   analytics_data:
   nginx_logs:
 
-networks:
-  default:
-    name: meteo-production
+# Utiliser le réseau défini dans docker-compose.yml
+# networks:
+#   default:
+#     name: meteo-production
