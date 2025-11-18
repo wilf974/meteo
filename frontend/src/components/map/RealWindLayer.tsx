@@ -30,9 +30,21 @@ export default function RealWindLayer() {
   const baseOpacity = windLayer?.opacity || 1;
   const opacity = activeMode === 'radar' ? baseOpacity * 0.3 : baseOpacity;
 
+  // DEBUG: Log état du composant
+  useEffect(() => {
+    console.log('💨 RealWindLayer DEBUG:', {
+      isEnabled,
+      activeMode,
+      weatherGridLength: weatherGrid.length,
+      opacity,
+      hasCanvas: !!canvasRef.current
+    });
+  }, [isEnabled, activeMode, weatherGrid.length, opacity]);
+
   // Re-initialize particles when grid data changes
   useEffect(() => {
     if (weatherGrid.length > 0) {
+      console.log('💨 Initializing wind particles, grid size:', weatherGrid.length);
       initializeParticles();
     }
   }, [weatherGrid]);
@@ -128,7 +140,15 @@ export default function RealWindLayer() {
   };
 
   useEffect(() => {
-    if (!isEnabled || !canvasRef.current) return;
+    if (!isEnabled || !canvasRef.current) {
+      console.log('💨 Wind layer NOT rendering:', {
+        isEnabled,
+        hasCanvas: !!canvasRef.current
+      });
+      return;
+    }
+
+    console.log('💨 Wind layer STARTING render');
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d', { alpha: true });
@@ -147,11 +167,25 @@ export default function RealWindLayer() {
     const draw = () => {
       const selectedTime = new Date(timelinePosition);
 
+      // DEBUG: Log première frame
+      if (!draw.logged) {
+        console.log('💨 Drawing wind particles:', {
+          particleCount: particlesRef.current.length,
+          canvasSize: `${canvas.width}x${canvas.height}`,
+          weatherGridLength: weatherGrid.length,
+          selectedTime
+        });
+        draw.logged = true;
+      }
+
       // Subtle fade effect for trails (like Windy) - very transparent to avoid darkening
       ctx.fillStyle = 'rgba(255, 255, 255, 0.015)'; // Almost transparent white fade
       ctx.globalCompositeOperation = 'destination-in';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.globalCompositeOperation = 'source-over';
+
+      let particlesWithWind = 0;
+      let totalWindSpeed = 0;
 
       // Update and draw particles
       particlesRef.current.forEach((particle) => {
@@ -159,6 +193,9 @@ export default function RealWindLayer() {
         const wind = getWindAtPoint(particle.x, particle.y, selectedTime);
 
         if (wind && wind.speed > 0.5) {
+          particlesWithWind++;
+          totalWindSpeed += wind.speed;
+
           // Update particle based on wind
           const angleRad = ((wind.direction - 90) * Math.PI) / 180;
           const speed = wind.speed / 2.5; // Adjust speed for visible movement
@@ -216,6 +253,18 @@ export default function RealWindLayer() {
           particle.age = 0;
         }
       });
+
+      // DEBUG: Log stats periodically
+      if (!draw.frameCount) draw.frameCount = 0;
+      draw.frameCount++;
+      if (draw.frameCount % 60 === 0) {
+        console.log('💨 Wind stats:', {
+          particlesWithWind,
+          totalParticles: particlesRef.current.length,
+          avgWindSpeed: particlesWithWind > 0 ? (totalWindSpeed / particlesWithWind).toFixed(1) : 0,
+          weatherGridLength: weatherGrid.length
+        });
+      }
     };
 
     // Optimized: 24fps instead of 30fps (20% less CPU usage)

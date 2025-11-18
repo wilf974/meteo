@@ -24,8 +24,27 @@ export default function RealPrecipitationLayer() {
   const isEnabled = activeMode === 'radar'; // Only enabled when mode is 'radar'
   const opacity = precipLayer?.opacity || 1;
 
+  // DEBUG: Log état du composant
   useEffect(() => {
-    if (!isEnabled || !canvasRef.current) return;
+    console.log('🌧️ RealPrecipitationLayer DEBUG:', {
+      isEnabled,
+      activeMode,
+      weatherGridLength: weatherGrid.length,
+      opacity,
+      hasCanvas: !!canvasRef.current
+    });
+  }, [isEnabled, activeMode, weatherGrid.length, opacity]);
+
+  useEffect(() => {
+    if (!isEnabled || !canvasRef.current) {
+      console.log('🌧️ Precipitation layer NOT rendering:', {
+        isEnabled,
+        hasCanvas: !!canvasRef.current
+      });
+      return;
+    }
+
+    console.log('🌧️ Precipitation layer STARTING render');
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d', { alpha: true });
@@ -43,10 +62,24 @@ export default function RealPrecipitationLayer() {
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      if (weatherGrid.length === 0) return;
+      if (weatherGrid.length === 0) {
+        console.log('🌧️ No weatherGrid data to render');
+        return;
+      }
 
       const selectedTime = new Date(timelinePosition);
       const gridSize = Math.sqrt(weatherGrid.length) - 1;
+
+      // DEBUG: Log première frame
+      if (!draw.logged) {
+        console.log('🌧️ Drawing precipitation:', {
+          gridSize,
+          totalPoints: weatherGrid.length,
+          canvasSize: `${canvas.width}x${canvas.height}`,
+          selectedTime
+        });
+        draw.logged = true;
+      }
 
       // Create a CONTINUOUS precipitation heatmap like Windy
       // Instead of drawing circles, we'll draw a smooth continuous field
@@ -77,6 +110,9 @@ export default function RealPrecipitationLayer() {
       // Increment animation offset for smooth movement (loops every 100 units)
       animationOffsetRef.current = (animationOffsetRef.current + 0.015) % 100;
       const animOffset = animationOffsetRef.current;
+
+      let pixelsDrawn = 0;
+      let totalPrecipitation = 0;
 
       for (let y = 0; y < canvas.height; y += resolution) {
         for (let x = 0; x < canvas.width; x += resolution) {
@@ -126,6 +162,9 @@ export default function RealPrecipitationLayer() {
           );
 
           if (precip < 0.1) continue; // Skip very light precipitation
+
+          pixelsDrawn++;
+          totalPrecipitation += precip;
 
           // Windy-style color scheme
           let r, g, b;
@@ -212,6 +251,18 @@ export default function RealPrecipitationLayer() {
       // Limit drops for performance
       if (rainDropsRef.current.length > 300) {
         rainDropsRef.current = rainDropsRef.current.slice(-300);
+      }
+
+      // DEBUG: Log stats periodically
+      if (!draw.frameCount) draw.frameCount = 0;
+      draw.frameCount++;
+      if (draw.frameCount % 60 === 0) {
+        console.log('🌧️ Precipitation stats:', {
+          pixelsDrawn,
+          totalPrecipitation: totalPrecipitation.toFixed(2),
+          avgPrecipitation: pixelsDrawn > 0 ? (totalPrecipitation / pixelsDrawn).toFixed(2) : 0,
+          rainDrops: rainDropsRef.current.length
+        });
       }
     };
 
