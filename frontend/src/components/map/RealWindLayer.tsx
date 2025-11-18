@@ -24,8 +24,11 @@ export default function RealWindLayer() {
   const { activeLayers, activeMode, timelinePosition, weatherGrid } = useMapStore();
 
   const windLayer = activeLayers.find(l => l.id === 'wind');
-  const isEnabled = activeMode === 'wind'; // Only enabled when mode is 'wind'
-  const opacity = windLayer?.opacity || 1;
+  // Enabled in both 'wind' mode (full visibility) and 'radar' mode (subtle background)
+  const isEnabled = activeMode === 'wind' || activeMode === 'radar';
+  // Subtle opacity in radar mode (0.3), full in wind mode
+  const baseOpacity = windLayer?.opacity || 1;
+  const opacity = activeMode === 'radar' ? baseOpacity * 0.3 : baseOpacity;
 
   // Re-initialize particles when grid data changes
   useEffect(() => {

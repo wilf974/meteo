@@ -108,6 +108,8 @@ export default function RealPrecipitationLayer() {
 
           // Windy-style color scheme
           let r, g, b;
+          const isStorm = precip >= 15; // Storm threshold: heavy precipitation
+
           if (precip < 0.2) {
             r = 150; g = 200; b = 250;
           } else if (precip < 0.5) {
@@ -132,10 +134,22 @@ export default function RealPrecipitationLayer() {
 
           // Higher opacity for visibility (Windy-style)
           const intensity = Math.min(precip / 15, 1);
-          const alpha = (0.4 + intensity * 0.4) * opacity; // 0.4-0.8 range
+          let alpha = (0.4 + intensity * 0.4) * opacity; // 0.4-0.8 range
+
+          // STORM ZONES: Boost opacity and add pulsing effect for heavy precipitation
+          if (isStorm) {
+            alpha = Math.min(alpha * 1.3, 0.95); // 30% more visible
+          }
 
           ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
           ctx.fillRect(x, y, resolution, resolution);
+
+          // Add storm indicator outline for very intense precipitation
+          if (isStorm) {
+            ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 * opacity})`;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, resolution, resolution);
+          }
 
           // Spawn rain drops for visual effect (only occasionally)
           if (precip > 1 && Math.random() < 0.002) {
