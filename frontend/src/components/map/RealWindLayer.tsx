@@ -291,7 +291,7 @@ export default function RealWindLayer() {
       }
       map.off('resize', resizeCanvas);
     };
-  }, [map, isEnabled, opacity, timelinePosition]);
+  }, [map, isEnabled, opacity, timelinePosition, weatherGrid]);
 
   if (!isEnabled) return null;
 
