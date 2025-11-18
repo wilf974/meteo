@@ -4,7 +4,15 @@ import { logger } from '../utils/logger';
 export const redisClient = createClient({
   socket: {
     host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379')
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    reconnectStrategy: (retries) => {
+      // Stop reconnecting after 3 attempts
+      if (retries > 3) {
+        logger.warn('Redis: Maximum reconnection attempts reached, giving up');
+        return new Error('Redis reconnection failed');
+      }
+      return retries * 1000; // Exponential backoff: 1s, 2s, 3s
+    }
   }
 });
 

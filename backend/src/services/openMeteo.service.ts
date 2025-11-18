@@ -50,11 +50,15 @@ export class OpenMeteoService {
 
     const cacheKey = `openmeteo:forecast:${roundedLat}:${roundedLon}:${start.toISOString()}:${end.toISOString()}`;
 
-    // Try cache first
-    const cached = await cacheService.get(cacheKey);
-    if (cached) {
-      logger.debug(`Cache HIT for ${roundedLat},${roundedLon}`);
-      return cached as ForecastResponse;
+    // Try cache first (if Redis is available)
+    try {
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        logger.debug(`Cache HIT for ${roundedLat},${roundedLon}`);
+        return cached as ForecastResponse;
+      }
+    } catch (cacheError) {
+      logger.debug('Cache not available, fetching from API');
     }
 
     logger.debug(`Cache MISS for ${roundedLat},${roundedLon} - fetching from API`);
@@ -95,8 +99,12 @@ export class OpenMeteoService {
 
       const data: ForecastResponse = response.data;
 
-      // Cache for 15 minutes
-      await cacheService.set(cacheKey, data, 900);
+      // Cache for 15 minutes (if Redis is available)
+      try {
+        await cacheService.set(cacheKey, data, 900);
+      } catch (cacheError) {
+        logger.debug('Cache not available, skipping cache set');
+      }
 
       return data;
     } catch (error: any) {
@@ -124,10 +132,14 @@ export class OpenMeteoService {
 
         const cacheKey = `openmeteo:forecast:${roundedLat}:${roundedLon}:${start.toISOString()}:${end.toISOString()}`;
 
-        // Try cache first
-        const cached = await cacheService.get(cacheKey);
-        if (cached) {
-          return { ...point, forecast: cached as ForecastResponse, cached: true };
+        // Try cache first (if Redis is available)
+        try {
+          const cached = await cacheService.get(cacheKey);
+          if (cached) {
+            return { ...point, forecast: cached as ForecastResponse, cached: true };
+          }
+        } catch (cacheError) {
+          // Cache not available, continue to API fetch
         }
 
         // Fetch from API

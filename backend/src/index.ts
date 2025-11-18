@@ -166,23 +166,33 @@ export { io };
 // Initialize database and start server
 const startServer = async () => {
   try {
-    // Connexion à PostgreSQL
-    await AppDataSource.initialize();
-    logger.info('✅ Base de données PostgreSQL connectée');
+    // Connexion à PostgreSQL (optionnelle pour WebSocket météo)
+    try {
+      await AppDataSource.initialize();
+      logger.info('✅ Base de données PostgreSQL connectée');
+    } catch (dbError) {
+      logger.warn('⚠️ PostgreSQL non disponible, continuant sans DB:', dbError);
+    }
 
-    // Connexion à Redis
-    await redisClient.connect();
-    logger.info('✅ Redis connecté');
+    // Connexion à Redis (optionnelle) - Ne pas attendre, laisse se connecter en background
+    redisClient.connect().then(() => {
+      logger.info('✅ Redis connecté');
+    }).catch((redisError) => {
+      logger.warn('⚠️ Redis non disponible, continuant sans cache');
+    });
 
-    // Initialize schedulers for daily reports
-    initializeSchedulers();
-    logger.info('✅ Schedulers initialized');
+    // Initialize schedulers for daily reports (only if DB is connected)
+    if (AppDataSource.isInitialized) {
+      initializeSchedulers();
+      logger.info('✅ Schedulers initialized');
+    }
 
     // Démarrage du serveur
     httpServer.listen(PORT, () => {
       logger.info(`🚀 Serveur démarré sur le port ${PORT}`);
       logger.info(`📍 Environment: ${process.env.NODE_ENV}`);
       logger.info(`🔗 API: http://localhost:${PORT}/api/${process.env.API_VERSION || 'v1'}`);
+      logger.info(`🌐 WebSocket: ws://localhost:${PORT}`);
     });
   } catch (error) {
     logger.error('❌ Erreur au démarrage du serveur:', error);
