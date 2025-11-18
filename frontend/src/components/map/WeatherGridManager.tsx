@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 import { useWeatherGrid } from '../../hooks/useWeatherGrid';
 import { useMapStore } from '../../store/mapStore';
@@ -16,6 +17,14 @@ export default function WeatherGridManager() {
       layer.enabled &&
       ['temperature', 'precipitation', 'wind', 'clouds', 'pressure'].includes(layer.id)
   );
+
+  // DEBUG: Log l'état du manager
+  useEffect(() => {
+    console.log('📡 WeatherGridManager DEBUG:', {
+      hasActiveWeatherLayers,
+      activeLayers: activeLayers.map(l => ({ id: l.id, enabled: l.enabled }))
+    });
+  }, [hasActiveWeatherLayers, activeLayers]);
 
   // Hook centralisé qui fetch et stocke les données dans le store
   useWeatherGrid(map, hasActiveWeatherLayers);
