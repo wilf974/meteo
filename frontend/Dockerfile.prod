@@ -18,8 +18,8 @@ COPY vite.config.ts ./
 COPY postcss.config.js ./
 COPY tailwind.config.js ./
 
-# Installer les dépendances
-RUN npm install
+# Installer les dépendances (avec --legacy-peer-deps pour résoudre conflits React)
+RUN npm install --legacy-peer-deps
 
 # Copier le code source
 COPY src ./src
