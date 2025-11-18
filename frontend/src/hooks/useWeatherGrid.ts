@@ -12,7 +12,7 @@ import { websocketService } from '../services/websocket.service';
  * - Stocke les données dans le store pour partage entre layers
  */
 export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
-  const { setWeatherGrid, setIsLoadingGrid } = useMapStore();
+  const { setWeatherGrid, setIsLoadingGrid, center: storeCenter, zoom: storeZoom } = useMapStore();
   const fetchTimeoutRef = useRef<number>();
   const isLoadingRef = useRef(false);
 
@@ -58,6 +58,16 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
           center: map.getCenter(),
           zoom
         });
+
+        // FIX: Vérifier si les bounds sont valides (pas trop larges)
+        // Si la carte n'est pas encore initialisée, les bounds peuvent couvrir le monde entier
+        const boundsWidth = bounds.getEast() - bounds.getWest();
+        const boundsHeight = bounds.getNorth() - bounds.getSouth();
+
+        if (boundsWidth > 180 || boundsHeight > 90 || bounds.getWest() < -180 || bounds.getEast() > 180) {
+          console.warn('⚠️ Map bounds invalides (trop larges ou hors limites), skip fetch');
+          return;
+        }
 
         // OPTIMIZED grid size: Can use larger grids now with WebSocket!
         // 8x8 = 64 points, but sent as ONE WebSocket request
