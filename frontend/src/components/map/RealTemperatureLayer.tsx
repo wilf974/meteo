@@ -7,10 +7,10 @@ export default function RealTemperatureLayer() {
   const map = useMap();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
-  const { activeLayers, timelinePosition, weatherGrid } = useMapStore();
+  const { activeLayers, activeMode, timelinePosition, weatherGrid } = useMapStore();
 
   const tempLayer = activeLayers.find(l => l.id === 'temperature');
-  const isEnabled = tempLayer?.enabled || false;
+  const isEnabled = activeMode === 'temperature'; // Only enabled when mode is 'temperature'
   const opacity = tempLayer?.opacity || 1;
 
   useEffect(() => {

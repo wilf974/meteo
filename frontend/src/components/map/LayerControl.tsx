@@ -1,24 +1,20 @@
-import { useState, useEffect, memo, useCallback } from 'react';
-import { useLayerControlState } from '../../store/mapSelectors';
-import { Layers, ChevronDown, ChevronUp, X, Thermometer, Cloud, Wind, Droplets, Gauge } from 'lucide-react';
+import { useState, useEffect, memo } from 'react';
+import { useMapStore, type WeatherMode } from '../../store/mapStore';
+import { Layers, Thermometer, Cloud, Wind, Droplets, Gauge, CloudRain, ChevronUp, ChevronDown, X } from 'lucide-react';
 
-const LAYER_ICONS: { [key: string]: { icon: React.ElementType; color: string; bgColor: string } } = {
-  temperature: { icon: Thermometer, color: '#ff9800', bgColor: 'rgba(255, 152, 0, 0.1)' },
-  precipitation: { icon: Droplets, color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.1)' },
-  wind: { icon: Wind, color: '#6366f1', bgColor: 'rgba(99, 102, 241, 0.1)' },
-  clouds: { icon: Cloud, color: '#9ca3af', bgColor: 'rgba(156, 163, 175, 0.1)' },
-  pressure: { icon: Gauge, color: '#a855f7', bgColor: 'rgba(168, 85, 247, 0.1)' },
+const WEATHER_MODES: { [key in WeatherMode]: { name: string; icon: React.ElementType; color: string; bgColor: string; description: string } } = {
+  radar: { name: 'Radar', icon: CloudRain, color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.1)', description: 'Précipitations' },
+  wind: { name: 'Vent', icon: Wind, color: '#6366f1', bgColor: 'rgba(99, 102, 241, 0.1)', description: 'Particules animées' },
+  temperature: { name: 'Température', icon: Thermometer, color: '#ff9800', bgColor: 'rgba(255, 152, 0, 0.1)', description: 'Zones thermiques' },
+  clouds: { name: 'Nuages', icon: Cloud, color: '#9ca3af', bgColor: 'rgba(156, 163, 175, 0.1)', description: 'Couverture nuageuse' },
+  pressure: { name: 'Pression', icon: Gauge, color: '#a855f7', bgColor: 'rgba(168, 85, 247, 0.1)', description: 'Zones barométriques' },
 };
 
 const LayerControl = memo(function LayerControl() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const { activeLayers, toggleLayer, setLayerOpacity } = useLayerControlState();
+  const { activeMode, setActiveMode } = useMapStore();
 
-  // Memoize handlers
-  const handleToggleOpen = useCallback(() => setIsOpen(prev => !prev), []);
-  const handleOpen = useCallback(() => setIsOpen(true), []);
-  const handleClose = useCallback(() => setIsOpen(false), []);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -36,7 +32,7 @@ const LayerControl = memo(function LayerControl() {
   if (isMobile && !isOpen) {
     return (
       <button
-        onClick={handleOpen}
+        onClick={() => setIsOpen(true)}
         style={{
           position: 'absolute',
           top: '20px',
@@ -167,125 +163,90 @@ const LayerControl = memo(function LayerControl() {
 
       {/* Content */}
       {isOpen && (
-        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {activeLayers.map((layer) => {
-            const layerConfig = LAYER_ICONS[layer.id];
-            const Icon = layerConfig?.icon;
+        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {(Object.keys(WEATHER_MODES) as WeatherMode[]).map((mode) => {
+            const modeConfig = WEATHER_MODES[mode];
+            const Icon = modeConfig.icon;
+            const isActive = activeMode === mode;
 
             return (
-              <div
-                key={layer.id}
+              <button
+                key={mode}
+                onClick={() => setActiveMode(mode)}
                 style={{
-                  padding: '16px',
-                  backgroundColor: layer.enabled ? layerConfig?.bgColor : 'rgba(0, 0, 0, 0.02)',
+                  padding: '14px 16px',
+                  backgroundColor: isActive ? modeConfig.bgColor : 'rgba(0, 0, 0, 0.02)',
                   borderRadius: '12px',
-                  border: layer.enabled ? `2px solid ${layerConfig?.color}` : '2px solid transparent',
-                  transition: 'all 0.3s ease',
+                  border: isActive ? `2px solid ${modeConfig.color}` : '2px solid transparent',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  outline: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.02)';
+                  }
                 }}
               >
-                {/* Layer Header */}
-                <label
+                {/* Radio button */}
+                <div
                   style={{
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    border: `2px solid ${isActive ? modeConfig.color : '#d1d5db'}`,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px',
-                    cursor: 'pointer',
-                    marginBottom: layer.enabled ? '12px' : 0,
+                    justifyContent: 'center',
+                    flexShrink: 0,
                   }}
                 >
-                  <div
-                    style={{
-                      position: 'relative',
-                      width: '20px',
-                      height: '20px',
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={layer.enabled}
-                      onChange={() => toggleLayer(layer.id)}
-                      style={{
-                        width: '20px',
-                        height: '20px',
-                        accentColor: layerConfig?.color,
-                        cursor: 'pointer',
-                      }}
-                    />
-                  </div>
-
-                  {Icon && (
+                  {isActive && (
                     <div
                       style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '10px',
-                        backgroundColor: layerConfig?.bgColor,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        backgroundColor: modeConfig.color,
                       }}
-                    >
-                      <Icon style={{ width: '20px', height: '20px', color: layerConfig?.color }} />
-                    </div>
+                    />
                   )}
+                </div>
 
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '15px', fontWeight: '600', color: '#111827' }}>
-                      {layer.name}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
-                      {layer.type}
-                    </div>
-                  </div>
-                </label>
+                {/* Icon */}
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    backgroundColor: isActive ? modeConfig.bgColor : 'rgba(0, 0, 0, 0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon style={{ width: '20px', height: '20px', color: isActive ? modeConfig.color : '#6b7280' }} />
+                </div>
 
-                {/* Opacity Slider */}
-                {layer.enabled && (
-                  <div style={{ marginTop: '8px' }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '8px',
-                      }}
-                    >
-                      <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
-                        Opacité
-                      </span>
-                      <span
-                        style={{
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          color: layerConfig?.color,
-                          padding: '2px 8px',
-                          backgroundColor: layerConfig?.bgColor,
-                          borderRadius: '6px',
-                        }}
-                      >
-                        {Math.round(layer.opacity * 100)}%
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={layer.opacity}
-                      onChange={(e) => setLayerOpacity(layer.id, parseFloat(e.target.value))}
-                      style={{
-                        width: '100%',
-                        height: '6px',
-                        borderRadius: '3px',
-                        outline: 'none',
-                        cursor: 'pointer',
-                        accentColor: layerConfig?.color,
-                      }}
-                    />
+                {/* Text */}
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <div style={{ fontSize: '15px', fontWeight: '600', color: isActive ? modeConfig.color : '#111827' }}>
+                    {modeConfig.name}
                   </div>
-                )}
-              </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                    {modeConfig.description}
+                  </div>
+                </div>
+              </button>
             );
           })}
         </div>

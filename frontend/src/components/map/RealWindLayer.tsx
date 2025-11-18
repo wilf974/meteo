@@ -21,10 +21,10 @@ export default function RealWindLayer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const particlesRef = useRef<WindParticle[]>([]);
-  const { activeLayers, timelinePosition, weatherGrid } = useMapStore();
+  const { activeLayers, activeMode, timelinePosition, weatherGrid } = useMapStore();
 
   const windLayer = activeLayers.find(l => l.id === 'wind');
-  const isEnabled = windLayer?.enabled || false;
+  const isEnabled = activeMode === 'wind'; // Only enabled when mode is 'wind'
   const opacity = windLayer?.opacity || 1;
 
   // Re-initialize particles when grid data changes

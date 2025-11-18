@@ -16,8 +16,11 @@ export interface GridPoint {
   forecast: ForecastResponse | null;
 }
 
+export type WeatherMode = 'radar' | 'wind' | 'temperature' | 'clouds' | 'pressure';
+
 interface MapState {
   activeLayers: LayerConfig[];
+  activeMode: WeatherMode; // Current weather mode selection
   center: [number, number];
   zoom: number;
   timelinePosition: Date;
@@ -29,6 +32,7 @@ interface MapState {
   setActiveLayers: (layers: LayerConfig[]) => void;
   toggleLayer: (layerId: string) => void;
   setLayerOpacity: (layerId: string, opacity: number) => void;
+  setActiveMode: (mode: WeatherMode) => void;
   setCenter: (center: [number, number]) => void;
   setZoom: (zoom: number) => void;
   setTimelinePosition: (time: Date) => void;
@@ -46,6 +50,7 @@ export const useMapStore = create<MapState>((set) => ({
     { id: 'clouds', name: 'Nuages', type: 'overlay', enabled: true, opacity: 0.5, order: 4 },
     { id: 'pressure', name: 'Pression', type: 'heatmap', enabled: false, opacity: 0.6, order: 5 },
   ],
+  activeMode: 'radar', // Default mode is radar (precipitation)
   center: [46.603354, 1.888334], // Centre de la France
   zoom: 6,
   timelinePosition: new Date(),
@@ -64,6 +69,7 @@ export const useMapStore = create<MapState>((set) => ({
       layer.id === layerId ? { ...layer, opacity } : layer
     ),
   })),
+  setActiveMode: (mode) => set({ activeMode: mode }),
   setCenter: (center) => set({ center }),
   setZoom: (zoom) => set({ zoom }),
   setTimelinePosition: (time) => set({ timelinePosition: time }),

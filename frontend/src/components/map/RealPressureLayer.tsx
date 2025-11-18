@@ -7,10 +7,10 @@ export default function RealPressureLayer() {
   const map = useMap();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
-  const { activeLayers, timelinePosition, weatherGrid } = useMapStore();
+  const { activeLayers, activeMode, timelinePosition, weatherGrid } = useMapStore();
 
   const pressureLayer = activeLayers.find(l => l.id === 'pressure');
-  const isEnabled = pressureLayer?.enabled || false;
+  const isEnabled = activeMode === 'pressure'; // Only enabled when mode is 'pressure'
   const opacity = pressureLayer?.opacity || 1;
 
   useEffect(() => {

@@ -7,10 +7,10 @@ export default function RealCloudLayer() {
   const map = useMap();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
-  const { activeLayers, timelinePosition, weatherGrid } = useMapStore();
+  const { activeLayers, activeMode, timelinePosition, weatherGrid } = useMapStore();
 
   const cloudLayer = activeLayers.find(l => l.id === 'clouds');
-  const isEnabled = cloudLayer?.enabled || false;
+  const isEnabled = activeMode === 'clouds'; // Only enabled when mode is 'clouds'
   const opacity = cloudLayer?.opacity || 1;
 
   useEffect(() => {

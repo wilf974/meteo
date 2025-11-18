@@ -17,10 +17,10 @@ export default function RealPrecipitationLayer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const rainDropsRef = useRef<RainDrop[]>([]);
-  const { activeLayers, timelinePosition, weatherGrid } = useMapStore();
+  const { activeLayers, activeMode, timelinePosition, weatherGrid } = useMapStore();
 
   const precipLayer = activeLayers.find(l => l.id === 'precipitation');
-  const isEnabled = precipLayer?.enabled || false;
+  const isEnabled = activeMode === 'radar'; // Only enabled when mode is 'radar'
   const opacity = precipLayer?.opacity || 1;
 
   useEffect(() => {
