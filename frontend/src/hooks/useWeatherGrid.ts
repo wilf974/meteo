@@ -90,6 +90,18 @@ export function useWeatherGrid(map: LeafletMap, enabled: boolean) {
           `${response.cached} cached, ${response.fresh} fresh | ` +
           `${newGridData.length} points total`
         );
+
+        // DEBUG: Log first point to verify data structure
+        if (newGridData.length > 0) {
+          const firstPoint = newGridData[0];
+          console.log('🔍 First grid point sample:', {
+            lat: firstPoint.lat,
+            lon: firstPoint.lon,
+            hasForecast: !!firstPoint.forecast,
+            forecastKeys: firstPoint.forecast ? Object.keys(firstPoint.forecast) : [],
+            firstHourlyKeys: firstPoint.forecast?.hourly ? Object.keys(firstPoint.forecast.hourly) : []
+          });
+        }
       } catch (error: any) {
         console.error('❌ WebSocket grid error:', error.message);
         // Fallback: Clear grid on error
