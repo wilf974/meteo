@@ -74,45 +74,62 @@ export default function RealPrecipitationLayer() {
           const latLng = { lat: point.lat, lng: point.lon };
           const screenPoint = map.latLngToContainerPoint(latLng);
 
-          // Draw smooth gradient in ALL directions (not just radial)
+          // Draw smooth gradient in ALL directions
           const precip = totalPrecip;
 
-          // Determine color based on intensity - SUBTLE like pro maps
+          // Windy-style color scheme: Light blue → Cyan → Green → Yellow → Orange → Red
           let r, g, b;
-          if (precip < 0.5) {
-            // Very light rain - Very light blue
-            r = 180; g = 220; b = 255;
+          if (precip < 0.2) {
+            // Very light rain - Light blue
+            r = 150; g = 200; b = 250;
+          } else if (precip < 0.5) {
+            // Light rain - Cyan-blue
+            r = 100; g = 180; b = 250;
+          } else if (precip < 1) {
+            // Light-moderate rain - Cyan
+            r = 50; g = 200; b = 235;
           } else if (precip < 2) {
-            // Light rain - Light blue
-            r = 120; g = 180; b = 255;
-          } else if (precip < 5) {
-            // Moderate rain - Medium blue
-            r = 60; g = 140; b = 240;
+            // Moderate rain - Cyan-green
+            r = 60; g = 220; b = 160;
+          } else if (precip < 4) {
+            // Moderate-heavy rain - Green
+            r = 90; g = 230; b = 90;
+          } else if (precip < 6) {
+            // Heavy rain - Yellow-green
+            r = 180; g = 240; b = 80;
           } else if (precip < 10) {
-            // Heavy rain - Strong blue
-            r = 20; g = 100; b = 200;
+            // Very heavy rain - Yellow
+            r = 250; g = 240; b = 70;
+          } else if (precip < 15) {
+            // Intense rain - Orange
+            r = 255; g = 180; b = 60;
+          } else if (precip < 25) {
+            // Extreme rain - Red-orange
+            r = 255; g = 120; b = 50;
           } else {
-            // Very heavy rain - Deep blue
-            r = 0; g = 60; b = 160;
+            // Torrential rain - Red
+            r = 240; g = 50; b = 50;
           }
 
-          // VERY SUBTLE opacity (0.1-0.35 range) to keep map visible
+          // Higher opacity for visibility (like Windy) - 0.3-0.7 range
           const intensity = Math.min(precip / 15, 1);
-          const alpha = (0.1 + intensity * 0.25) * opacity;
+          const alpha = (0.3 + intensity * 0.4) * opacity;
 
-          // Large smooth gradient for natural look
+          // Large smooth gradient for natural look (larger than before)
+          const gradientRadius = cellWidth * 3.5;
           const gradient = ctx.createRadialGradient(
             screenPoint.x, screenPoint.y, 0,
-            screenPoint.x, screenPoint.y, cellWidth * 2.5
+            screenPoint.x, screenPoint.y, gradientRadius
           );
 
           gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
-          gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${alpha * 0.6})`);
+          gradient.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, ${alpha * 0.7})`);
+          gradient.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, ${alpha * 0.4})`);
           gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
 
           ctx.fillStyle = gradient;
           ctx.beginPath();
-          ctx.arc(screenPoint.x, screenPoint.y, cellWidth * 2.5, 0, Math.PI * 2);
+          ctx.arc(screenPoint.x, screenPoint.y, gradientRadius, 0, Math.PI * 2);
           ctx.fill();
 
           // Spawn rain/snow drops based on intensity

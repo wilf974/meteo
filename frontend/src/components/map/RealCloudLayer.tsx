@@ -51,11 +51,11 @@ export default function RealCloudLayer() {
 
         const cloudCover = weatherData.cloudCover / 100; // 0-1
 
-        // Large zones for smooth cloud display
-        const zoneSize = 500;
+        // Large zones for smooth cloud display (Windy-style)
+        const zoneSize = 550;
 
-        // VERY SUBTLE opacity to keep map visible (0.08-0.25 range)
-        const baseAlpha = 0.08 + (Math.pow(cloudCover, 0.9) * 0.17); // Range 0.08-0.25
+        // Higher opacity for better visibility (Windy range: 0.15-0.45)
+        const baseAlpha = 0.15 + (Math.pow(cloudCover, 0.85) * 0.30); // Range 0.15-0.45
         const alpha = baseAlpha * opacity;
 
         const gradient = ctx.createRadialGradient(

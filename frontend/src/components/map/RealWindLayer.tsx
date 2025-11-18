@@ -39,7 +39,7 @@ export default function RealWindLayer() {
     if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;
-    const numParticles = 3000; // Professional amount like Windy
+    const numParticles = 5000; // More particles for better visibility like Windy
 
     particlesRef.current = [];
 
@@ -48,7 +48,7 @@ export default function RealWindLayer() {
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
         age: Math.random() * 100,
-        maxAge: 50 + Math.random() * 50,
+        maxAge: 60 + Math.random() * 60, // Longer trails
         speed: 0,
         direction: 0,
       });
@@ -144,8 +144,11 @@ export default function RealWindLayer() {
     const draw = () => {
       const selectedTime = new Date(timelinePosition);
 
-      // Clear canvas each frame (no fade effect to avoid darkening the map)
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Subtle fade effect for trails (like Windy) - very transparent to avoid darkening
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.015)'; // Almost transparent white fade
+      ctx.globalCompositeOperation = 'destination-in';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.globalCompositeOperation = 'source-over';
 
       // Update and draw particles
       particlesRef.current.forEach((particle) => {
@@ -155,7 +158,7 @@ export default function RealWindLayer() {
         if (wind && wind.speed > 0.5) {
           // Update particle based on wind
           const angleRad = ((wind.direction - 90) * Math.PI) / 180;
-          const speed = wind.speed / 3; // Adjust speed for pixel movement
+          const speed = wind.speed / 2.5; // Adjust speed for visible movement
 
           particle.speed = wind.speed;
           particle.direction = wind.direction;
@@ -172,28 +175,37 @@ export default function RealWindLayer() {
             particle.x = Math.random() * canvas.width;
             particle.y = Math.random() * canvas.height;
             particle.age = 0;
-            particle.maxAge = 50 + Math.random() * 50;
+            particle.maxAge = 60 + Math.random() * 60;
           }
 
-          // Draw particle with color based on speed
-          const speedNormalized = Math.min(wind.speed / 60, 1);
+          // Draw particle with color based on speed (Windy color scheme)
           let r, g, b;
 
-          if (wind.speed < 20) {
-            r = 100; g = 200; b = 255; // Light blue
+          if (wind.speed < 5) {
+            r = 98; g = 113; b = 183; // Very light wind - light purple
+          } else if (wind.speed < 10) {
+            r = 57; g = 148; b = 224; // Light wind - blue
+          } else if (wind.speed < 15) {
+            r = 57; g = 200; b = 195; // Moderate wind - cyan
+          } else if (wind.speed < 20) {
+            r = 74; g = 217; b = 109; // Fresh wind - green
+          } else if (wind.speed < 30) {
+            r = 251; g = 242; b = 54; // Strong wind - yellow
           } else if (wind.speed < 40) {
-            r = 255; g = 255; b = 100; // Yellow
-          } else if (wind.speed < 60) {
-            r = 255; g = 150; b = 0; // Orange
+            r = 255; g = 173; b = 46; // Very strong - orange
+          } else if (wind.speed < 50) {
+            r = 255; g = 111; b = 75; // Gale - red-orange
           } else {
-            r = 255; g = 50; b = 50; // Red
+            r = 229; g = 52; b = 87; // Storm - red
           }
 
-          // Very subtle opacity for particles
-          const alpha = (1 - particle.age / particle.maxAge) * opacity * 0.3;
+          // Higher opacity for visibility (like Windy)
+          const alpha = (1 - particle.age / particle.maxAge) * opacity * 0.8;
 
           ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-          ctx.fillRect(particle.x, particle.y, 1.5, 1.5);
+
+          // Larger particles for better visibility
+          ctx.fillRect(particle.x, particle.y, 2.5, 2.5);
         } else {
           // No wind, reset particle
           particle.x = Math.random() * canvas.width;

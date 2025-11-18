@@ -52,11 +52,11 @@ export default function RealTemperatureLayer() {
         const temp = weatherData.temperature;
         const color = getTemperatureColor(temp);
 
-        // Large zones for smooth gradients
-        const zoneSize = 500;
+        // Large zones for smooth gradients (Windy-style)
+        const zoneSize = 600;
 
-        // VERY SUBTLE opacity to keep map visible (0.15 range)
-        const baseAlpha = 0.15; // Very subtle to not hide map
+        // Higher opacity for visibility (like Windy) - 0.35 base
+        const baseAlpha = 0.35;
         const alpha = baseAlpha * opacity;
 
         const gradient = ctx.createRadialGradient(
@@ -64,12 +64,11 @@ export default function RealTemperatureLayer() {
           screenPoint.x, screenPoint.y, zoneSize
         );
 
-        // Professional gradient with clear temperature zone boundaries
+        // Smooth gradient like Windy
         gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`);
-        gradient.addColorStop(0.25, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.85})`);
-        gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.6})`);
-        gradient.addColorStop(0.75, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.3})`);
-        gradient.addColorStop(0.9, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.1})`);
+        gradient.addColorStop(0.3, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.8})`);
+        gradient.addColorStop(0.6, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.5})`);
+        gradient.addColorStop(0.85, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.2})`);
         gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
 
         ctx.fillStyle = gradient;
@@ -79,13 +78,6 @@ export default function RealTemperatureLayer() {
           zoneSize * 2,
           zoneSize * 2
         );
-
-        // Add temperature isotherm contours for better visualization
-        ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.4})`;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(screenPoint.x, screenPoint.y, zoneSize * 0.6, 0, Math.PI * 2);
-        ctx.stroke();
       });
     };
 
